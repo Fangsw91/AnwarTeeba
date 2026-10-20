@@ -1,13 +1,14 @@
 :root {
-  --bg: #f3f5f2;
+  --bg: #f4f4f8;
   --card: #ffffff;
-  --ink: #1b2a22;
-  --muted: #66766c;
-  --line: #e1e7e2;
-  --brand: #0f7a4a;
-  --brand-soft: #e3f3ea;
-  --danger: #c0392b;
-  --danger-soft: #fbeae8;
+  --ink: #1d1b3a;
+  --muted: #6a6985;
+  --line: #e2e1ee;
+  --brand: #28235d;
+  --brand-soft: #e8e7f3;
+  --accent: #e01f26;
+  --danger: #d4181f;
+  --danger-soft: #fdeaeb;
   --warn: #9a6a12;
   --warn-soft: #fbf1dc;
   --radius: 14px;
@@ -197,3 +198,18 @@ main > *, .grid > *, .card { min-width: 0; max-width: 100%; }
 #taxTable th, #taxTable td { padding: 8px 3px; font-size: 12.5px; white-space: nowrap; }
 #taxTable td small { color: var(--muted); font-weight: 400; font-size: 11px; direction: rtl; }
 #taxTable td:first-child { direction: rtl; text-align: right; }
+
+/* ---------- هوية الشعار: كحلي وأحمر ---------- */
+.bar { border-bottom: 4px solid var(--accent); }
+.bar .logo { width: 44px; height: 44px; border-radius: 12px; background: #fff; flex: none; object-fit: contain; }
+.nav button.on { color: var(--brand); box-shadow: inset 0 3px 0 var(--accent); }
+.dot.on { background: var(--accent); }
+#scanner .frame { border-color: var(--accent); }
+#toast div { background: var(--brand); }
+#toast div.ok { background: var(--brand); border-inline-start: 5px solid var(--accent); }
+.seg button.on { color: var(--brand); }
+.progress > i { background: linear-gradient(270deg, var(--brand), var(--accent)); }
+.card.warn { background: #fdf1e0; border-color: #f0d9b0; color: #8a5a0a; }
+.filebtn { position: relative; display: block; }
+.filebtn input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.filebtn .btn { display: flex; align-items: center; justify-content: center; pointer-events: none; }

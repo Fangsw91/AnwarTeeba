@@ -165,7 +165,7 @@
       let start = 0;
       if (isHeader) start = 1;
       else col = { barcode: 0, name: 1, unit: 2, system: 3, cost: 4, tax: 5 };   // بدون عناوين: الترتيب القديم
-      if (col.name < 0) throw new Error('ما لقيت عمود اسم الصنف بالملف');
+      if (col.name < 0) throw new Error('لا يوجد عمود اسم الصنف في الملف');
       const get = (row, i) => (i >= 0 ? row[i] : undefined);
 
       for (let i = start; i < rows.length; i++) {
@@ -174,7 +174,7 @@
         const rawBarcode = get(row, col.barcode);
         if (typeof rawBarcode === 'string' && /^\d+(\.\d+)?E\+\d+$/i.test(rawBarcode.trim())) {
           skipped++;
-          if (errors.length < 5) errors.push(`سطر ${line}: الباركود بصيغة علمية (E+) — حوّل عمود الباركود إلى نص في Excel`);
+          if (errors.length < 5) errors.push(`سطر ${line}: الباركود بصيغة علمية (E+)، ويجب أن يكون عمود الباركود نصاً`);
           continue;
         }
         const name = String(get(row, col.name) == null ? '' : get(row, col.name)).replace(/\s+/g, ' ').trim();
@@ -362,7 +362,7 @@
     async function undoCount(id) {
       let i = -1;
       for (let k = S.counts.length - 1; k >= 0; k--) if (S.counts[k].id === id) { i = k; break; }
-      if (i < 0) throw new Error('ما قدرت ألغي هذا السطر');
+      if (i < 0) throw new Error('تعذّر إلغاء هذا السطر');
       const c = S.counts[i];
       await write('counts', t => t.objectStore('counts').delete(id));
       S.counts.splice(i, 1);
@@ -374,7 +374,7 @@
       const out = [];
       for (let i = S.counts.length - 1; i >= 0 && out.length < (limit || 12); i--) {
         const c = S.counts[i];
-        if (String(c.counter).startsWith('دمج:')) continue; // أسطر الدمج ما بتتلغى سطر سطر
+        if (String(c.counter).startsWith('دمج:')) continue; // أسطر الدمج لا تُلغى سطراً سطراً
         const p = S.products.get(c.productId);
         out.push({ id: c.id, qty: c.qty, name: p ? p.name : '؟', unit: p ? p.unit : '', ts: c.ts });
       }

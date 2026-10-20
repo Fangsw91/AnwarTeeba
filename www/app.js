@@ -59,7 +59,7 @@ $('nav').addEventListener('click', ev => { const b = ev.target.closest('button')
 /* ---------- الاسم ---------- */
 $('nameSave').addEventListener('click', async () => {
   const v = $('nameInput').value.trim();
-  if (!v) { toast('اكتب اسمك', 'err'); return; }
+  if (!v) { toast('الاسم مطلوب', 'err'); return; }
   await store.setMeta('deviceName', v);
   refreshHeader();
 });
@@ -91,7 +91,7 @@ async function doLookup(text, scanned) {
 function renderResults(items, total) {
   const box = $('results');
   const price = p => pf.format(inc() ? p.priceGross : p.priceBase);
-  box.innerHTML = `<div class="info">${nf.format(total)} صنف مطابق${total > items.length ? ' (أول ' + items.length + ' — زد كلمة للتضييق)' : ''}</div>` +
+  box.innerHTML = `<div class="info">${nf.format(total)} صنف مطابق${total > items.length ? ' (عرض أول ' + items.length + ')' : ''}</div>` +
     items.map((p, i) =>
     `<button type="button" class="result" data-i="${i}">
        <span>${esc(p.name)}<small>${esc(p.barcode || 'بدون باركود')} · ${esc(p.unit)} · ${price(p)}
@@ -110,7 +110,7 @@ function renderProductInfo() {
   const p = current;
   $('pName').textContent = p.name;
   $('pMeta').textContent = (p.barcode || 'بدون باركود') + ' · ' + p.unit +
-    (p.counted ? ' · المعدود لحد الآن: ' + nf.format(p.counted) : '');
+    (p.counted ? ' · المعدود حتى الآن: ' + nf.format(p.counted) : '');
   $('pPrice').textContent = `السعر ${pf.format(p.priceBase)} قبل الضريبة · ${pf.format(p.priceGross)} بعدها · ${taxTxt(p.tax)}`;
 }
 
@@ -194,7 +194,7 @@ let adding = false;
 async function addCurrent() {
   if (!current || adding) return;
   const qty = qtyVal();
-  if (qty <= 0) { toast('اكتب كمية أكبر من صفر', 'err'); return; }
+  if (qty <= 0) { toast('يجب أن تكون الكمية أكبر من صفر', 'err'); return; }
   adding = true;
   $('addBtn').disabled = true;
   try {
@@ -256,7 +256,7 @@ async function openScanner() {
     });
   } catch (e) {
     stopScanner();
-    toast('تعذّر فتح الكاميرا. اسمح للتطبيق باستخدام الكاميرا من إعدادات الجهاز.', 'err');
+    toast('تعذّر فتح الكاميرا. تأكد من منح التطبيق إذن الكاميرا.', 'err');
   }
 }
 
@@ -311,9 +311,8 @@ function renderTaxTable() {
   const t = r.total;
   $('taxRows').innerHTML = cats.map(row).join('') +
     `<tr class="tot"><td>المجموع<br><small>${nf.format(t.items)}/${nf.format(t.products)}</small></td><td>${mf.format(t.base)}</td><td>${mf.format(t.taxAmount)}</td><td>${mf.format(t.gross)}</td></tr>`;
-  $('taxNote').textContent = (unset.products
-    ? `* ${nf.format(unset.products)} صنف ما انحدد له ضريبة (محسوب 0%). حدّدها من تبويب «الأصناف». `
-    : '') + 'اضغط على فئة لعرض أصنافها. الأسعار ' + (r.includesTax ? 'شاملة الضريبة (من الإعدادات).' : 'غير شاملة الضريبة (من الإعدادات).');
+  $('taxNote').textContent = (unset.products ? `* ${nf.format(unset.products)} صنف بلا ضريبة محددة (تُحتسب 0%). ` : '') +
+    'الأسعار ' + (r.includesTax ? 'شاملة الضريبة.' : 'غير شاملة الضريبة.');
 }
 $('taxRows').addEventListener('click', ev => {
   const tr = ev.target.closest('tr[data-tax]');
@@ -369,7 +368,7 @@ function downloadBlob(name, text) {
 
 $('exportBtn').addEventListener('click', async () => {
   if (!store.getMeta('deviceName', '')) {
-    toast('اكتب اسم الجهاز أولاً من «الإعدادات» (اسم مختلف لكل جهاز)', 'err');
+    toast('يلزم تحديد اسم الجهاز في الإعدادات أولاً', 'err');
     return;
   }
   const day = new Date().toISOString().slice(0, 10);
@@ -397,7 +396,7 @@ $('exportTaxBtn').addEventListener('click', async () => {
 
 $('mergeBtn').addEventListener('click', async () => {
   const files = [...$('mergeFiles').files];
-  if (!files.length) { toast('اختر ملف واحد على الأقل', 'err'); return; }
+  if (!files.length) { toast('لم يُختر أي ملف', 'err'); return; }
   const out = [];
   for (const f of files) {
     try {
@@ -411,14 +410,14 @@ $('mergeBtn').addEventListener('click', async () => {
     }
   }
   $('mergeRes').textContent = out.join('\n');
-  $('mergeFiles').value = '';
+  $('mergeFiles').value = ''; $('mergeFileName').textContent = 'لم يُختر أي ملف';
   renderStats(); loadReport(false); refreshHeader();
 });
 
 /* ---------- الأصناف ---------- */
 function showImport(r) {
   let t = `تم: ${nf.format(r.inserted)} صنف جديد، ${nf.format(r.updated)} محدّث، ${nf.format(r.skipped)} متجاهَل.`;
-  if (r.duplicates) t += `\n${nf.format(r.duplicates)} صنف باركوده مكرر بالملف (أُضيفوا بدون باركود، تلاقيهم بالاسم).`;
+  if (r.duplicates) t += `\n${nf.format(r.duplicates)} صنف باركوده مكرر بالملف (أُضيفت بدون باركود ويمكن البحث عنها بالاسم).`;
   if (r.errors.length) t += '\n' + r.errors.join('\n');
   $('importRes').textContent = t;
   $('pCount').textContent = nf.format(store.productCount);
@@ -433,7 +432,7 @@ function loadXlsx() {
       const el = document.createElement('script');
       el.src = 'vendor/xlsx.full.min.js';
       el.onload = res;
-      el.onerror = () => { xlsxLoading = null; rej(new Error('تعذّر تحميل قارئ Excel')); };
+      el.onerror = () => { xlsxLoading = null; rej(new Error('تعذّر تحميل قارئ ملفات الجداول')); };
       document.head.appendChild(el);
     });
   }
@@ -449,15 +448,20 @@ async function readTable(file) {
     await loadXlsx();
     const wb = XLSX.read(buf, { type: 'array' });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    if (!ws) throw new Error('الملف ما فيه أي ورقة');
+    if (!ws) throw new Error('الملف لا يحتوي على أي ورقة');
     return XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
   }
   return Inv.csv.parse(Inv.csv.decodeBuffer(buf));
 }
 
+$('file').addEventListener('change', () => { $('fileName').textContent = $('file').files[0] ? $('file').files[0].name : 'لم يُختر أي ملف'; });
+$('mergeFiles').addEventListener('change', () => {
+  const n = $('mergeFiles').files.length;
+  $('mergeFileName').textContent = n === 0 ? 'لم يُختر أي ملف' : n === 1 ? $('mergeFiles').files[0].name : `تم اختيار ${n} ملفات`;
+});
 $('importBtn').addEventListener('click', async () => {
   const f = $('file').files[0];
-  if (!f) { toast('اختر ملف أولاً', 'err'); return; }
+  if (!f) { toast('لم يُختر أي ملف', 'err'); return; }
   $('importBtn').disabled = true;
   $('importRes').textContent = 'جاري قراءة الملف…';
   try {
@@ -465,7 +469,7 @@ $('importBtn').addEventListener('click', async () => {
     $('importRes').textContent = 'جاري الاستيراد (' + nf.format(rows.length) + ' سطر)…';
     await new Promise(r => setTimeout(r, 30));
     showImport(await store.importProducts(rows));
-    $('file').value = '';
+    $('file').value = ''; $('fileName').textContent = 'لم يُختر أي ملف';
   } catch (e) { $('importRes').textContent = ''; toast(e.message || 'تعذّر قراءة الملف', 'err'); }
   finally { $('importBtn').disabled = false; }
 });
@@ -480,11 +484,11 @@ function updateBulk() {
   const n = store.countMatching(q);
   const names = q ? store.lookupAll(q, 4).items.map(x => x.name).join('، ') : '';
   $('bulkCount').textContent = q
-    ? (n ? `${nf.format(n)} صنف مطابق: ${names}${n > 4 ? '…' : ''}` : 'ما في أصناف مطابقة')
+    ? (n ? `${nf.format(n)} صنف مطابق: ${names}${n > 4 ? '…' : ''}` : 'لا توجد أصناف مطابقة')
     : `كل الأصناف (${nf.format(n)})`;
   $('bulkBtn').disabled = n === 0;
   const unset = store.taxReport().cats.slice(-1)[0].products;
-  $('taxUnset').textContent = unset ? `أصناف بدون ضريبة محددة: ${nf.format(unset)} (محسوبة 0% بالتقارير)` : 'كل الأصناف لها ضريبة محددة.';
+  $('taxUnset').textContent = unset ? `أصناف بدون ضريبة محددة: ${nf.format(unset)} (تُحتسب 0% في التقارير)` : 'كل الأصناف لها ضريبة محددة.';
 }
 $('bulkQ').addEventListener('input', debounce(updateBulk, 200));
 $('bulkBtn').addEventListener('click', async () => {
@@ -494,7 +498,7 @@ $('bulkBtn').addEventListener('click', async () => {
   if (!n || !confirm(`تحديد ضريبة ${rate}% لـ ${nf.format(n)} صنف${q ? ' (مطابقة لـ «' + q + '»)' : ' (كل الأصناف)'}؟`)) return;
   try {
     const c = await store.bulkSetTax(q, rate);
-    $('bulkRes').textContent = `تم: ${nf.format(c)} صنف صار ${rate}%.`;
+    $('bulkRes').textContent = `تم تحديد ${rate}% لـ ${nf.format(c)} صنف.`;
     updateBulk();
   } catch (e) { toast(e.message, 'err'); }
 });
@@ -511,13 +515,13 @@ $('setSave').addEventListener('click', async () => {
 });
 $('resetBtn').addEventListener('click', async () => {
   if (!confirm('سيتم مسح كل الكميات المعدودة على هذا الجهاز (الأصناف تبقى). هل صدّرت نسخة؟')) return;
-  if (!confirm('متأكد؟ هذا الإجراء ما بيرجع.')) return;
+  if (!confirm('هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء.')) return;
   try { await store.resetCounts(); toast('بدأ جرد جديد', 'ok'); showTab('count'); }
   catch (e) { toast(e.message, 'err'); }
 });
 $('wipeBtn').addEventListener('click', async () => {
   if (!confirm('سيتم مسح كل الأصناف وكل العدّ من هذا الجهاز. متابعة؟')) return;
-  if (!confirm('متأكد؟ هذا الإجراء ما بيرجع.')) return;
+  if (!confirm('هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء.')) return;
   try { await store.wipeAll(); toast('تم المسح', 'ok'); showTab('count'); }
   catch (e) { toast(e.message, 'err'); }
 });
