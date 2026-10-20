@@ -25,17 +25,24 @@ let queue = Promise.resolve();
 const enqueue = fn => (queue = queue.then(fn).catch(e => toast(e.message || 'خطأ', 'err')));
 
 /* ---------- الإقلاع ---------- */
+const LOAD_STEPS = ['جارٍ تحميل الأصناف…', 'جارٍ تجهيز الباركود والأسعار…', 'جارٍ تجهيز الضرائب والتقارير…', 'اكتمل التحميل'];
 async function boot() {
+  const t0 = Date.now();
+  LOAD_STEPS.forEach((t, i) => setTimeout(() => { $('ldText').textContent = t; }, i * 1100));
   try {
     await store.init();
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   } catch (e) {
     document.querySelector('main').innerHTML = '<div class="card warn">تعذّر فتح مخزن البيانات على هذا الجهاز: ' + esc(e.message) + '</div>';
+    $('loading').hidden = true;
     return;
   }
   applyFont(store.getMeta('fontSize', 19));
   refreshHeader();
   showTab('count');
+  await new Promise(r => setTimeout(r, Math.max(0, 4000 - (Date.now() - t0))));
+  $('loading').classList.add('out');
+  setTimeout(() => { $('loading').hidden = true; }, 450);
 }
 
 function refreshHeader() {
