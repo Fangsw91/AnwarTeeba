@@ -4,7 +4,7 @@
   "private": true,
   "description": "تطبيق جرد السوبرماركت (أوفلاين)",
   "scripts": {
-    "build:web": "cp node_modules/@zxing/library/umd/index.min.js www/vendor/zxing.min.js && cp node_modules/xlsx/dist/xlsx.full.min.js www/vendor/xlsx.full.min.js && esbuild src/native.js --bundle --minify --format=iife --outfile=www/native.js",
+    "build:web": "node scripts/build-assets.js && cp node_modules/@zxing/library/umd/index.min.js www/vendor/zxing.min.js && cp node_modules/xlsx/dist/xlsx.full.min.js www/vendor/xlsx.full.min.js && esbuild src/native.js --bundle --minify --format=iife --outfile=www/native.js",
     "sync": "npm run build:web && cap sync android",
     "test": "node test/logic.test.js"
   },
@@ -18,7 +18,12 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.3",
+    "@expo-google-fonts/amiri": "^0.4.1",
+    "@expo-google-fonts/cairo": "^0.4.2",
+    "@expo-google-fonts/noto-naskh-arabic": "^0.4.5",
     "esbuild": "^0.28.2",
-    "fake-indexeddb": "^6.2.6"
+    "exceljs": "^4.4.0",
+    "fake-indexeddb": "^6.2.6",
+    "jspdf": "^4.2.1"
   }
 }

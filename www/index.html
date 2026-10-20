@@ -10,17 +10,11 @@
 </head>
 <body>
 
-<div class="bar">
-  <img class="logo" src="logo.png" alt="">
-  <div class="title">
-    <span id="stName">جرد السوبرماركت</span>
-    <span class="sub">الجهاز: <span id="who">—</span> · البيانات محفوظة على هذا الجهاز</span>
-  </div>
-</div>
+<div class="bar"></div>
 
 <main>
 
-  <!-- ===== عدّ ===== -->
+  <!-- ===== الجرد =====-->
   <section id="tab-count" class="grid">
     <div id="nameCard" class="card" hidden>
       <h3>اسم المستخدم (أو اسم الجهاز)</h3>
@@ -37,10 +31,6 @@
         <input id="q" placeholder="امسح الباركود أو اكتب اسم الصنف" enterkeyhint="search" autocapitalize="off" autocorrect="off">
         <button type="button" class="btn" id="scanBtn" aria-label="مسح بالكاميرا">📷</button>
       </div>
-      <label class="check">
-        <input type="checkbox" id="fast">
-        وضع المسح السريع (كل مسح = +1 تلقائياً)
-      </label>
     </form>
 
     <section id="results" class="results" hidden></section>
@@ -130,11 +120,29 @@
         </table>
       </div>
       <div class="note" id="taxNote"></div>
-      <button class="btn ghost block" id="exportTaxBtn" style="margin-top:10px">تصدير تقرير الضرائب</button>
     </div>
 
     <div class="card stack">
-      <button class="btn block" id="exportBtn">تصدير الجرد</button>
+      <h3>إصدار تقرير</h3>
+      <label class="field">نوع التقرير
+        <select id="repType">
+          <option value="full">تقرير الجرد الشامل</option>
+          <option value="tax">تقرير فئات الضريبة</option>
+          <option value="diff" data-book>تقرير الفروقات</option>
+          <option value="uncounted">الأصناف غير المعدودة</option>
+        </select>
+      </label>
+      <div class="seg" id="repFmt">
+        <button type="button" data-f="xlsx" class="on">إكسل</button>
+        <button type="button" data-f="pdf">PDF</button>
+      </div>
+      <button class="btn block" id="repBtn">إصدار التقرير</button>
+      <div class="progress-note" id="repNote"></div>
+    </div>
+
+    <div class="card stack">
+      <h3>نسخة الجرد والدمج</h3>
+      <button class="btn ghost block" id="exportBtn">تصدير نسخة الجرد</button>
       <div class="field">دمج ملفات من أجهزة أخرى
         <label class="filebtn"><input type="file" id="mergeFiles" multiple><span class="btn ghost">اختيار الملفات</span></label>
         <span class="note" id="mergeFileName">لم يُختر أي ملف</span>
@@ -201,7 +209,20 @@
           <option value="incl">شاملة الضريبة</option>
         </select>
       </label>
+      <label class="field">اسم المنشأة (يظهر في التقارير)
+        <input id="setCompany" maxlength="60">
+      </label>
       <button class="btn block" id="setSave">حفظ</button>
+    </div>
+
+    <div class="card stack">
+      <h3>حجم الخط</h3>
+      <div class="seg" id="fontSeg">
+        <button type="button" data-s="16">صغير</button>
+        <button type="button" data-s="19">متوسط</button>
+        <button type="button" data-s="22">كبير</button>
+        <button type="button" data-s="25">كبير جداً</button>
+      </div>
     </div>
 
     <div class="card stack danger-zone">
@@ -214,7 +235,7 @@
 </main>
 
 <nav class="nav" id="nav">
-  <button data-tab="count" class="on"><i>🔍</i>عدّ</button>
+  <button data-tab="count" class="on"><i>🔍</i>الجرد</button>
   <button data-tab="report"><i>📊</i>النتائج</button>
   <button data-tab="products"><i>📦</i>الأصناف</button>
   <button data-tab="settings"><i>⚙️</i>الإعدادات</button>
@@ -232,6 +253,7 @@
 <script src="native.js"></script>
 <script src="csv.js"></script>
 <script src="db.js"></script>
+<script src="report.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -494,6 +494,56 @@
       return stringify(rows);
     }
 
+    /* ---------- بيانات التقارير (إكسل / PDF) ---------- */
+    const REPORT_TITLES = {
+      full: 'تقرير الجرد الشامل',
+      tax: 'تقرير فئات الضريبة',
+      diff: 'تقرير الفروقات',
+      uncounted: 'تقرير الأصناف غير المعدودة',
+    };
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function nowText() {
+      const d = new Date();
+      return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}  ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    }
+    const byName = (a, b) => (a._n < b._n ? -1 : a._n > b._n ? 1 : 0);
+
+    function reportPack(type) {
+      if (!REPORT_TITLES[type]) throw new Error('نوع التقرير غير معروف');
+      const st = stats();
+      const tr = taxReport();
+      const hasBook = st.withBook > 0;
+      if (type === 'diff' && !hasBook) throw new Error('لا توجد كميات دفترية لحساب الفروقات');
+      const mk = p => {
+        const has = S.totals.has(p.id), q = has ? S.totals.get(p.id) : 0, m = money(p);
+        return {
+          name: p.name, barcode: p.barcode || '', unit: p.unit, tax: p.tax == null ? null : p.tax,
+          counted: has, qty: q, system: p.system == null ? null : p.system,
+          diff: p.system == null ? null : r3(q - p.system),
+          price: r6(m.base), priceGross: r6(m.gross),
+          base: r3(q * m.base), taxAmount: r3(q * m.tax), gross: r3(q * m.gross),
+          diffValue: p.system == null ? null : r3((q - p.system) * m.base),
+          diffValueGross: p.system == null ? null : r3((q - p.system) * m.gross),
+          _n: p._n,
+        };
+      };
+      const all = [...S.products.values()].map(p => ({ p, it: mk(p) }));
+      let items;
+      if (type === 'uncounted') items = all.filter(x => !x.it.counted).sort((a, b) => byName(a.p, b.p));
+      else if (type === 'diff') items = all.filter(x => x.it.counted && hasDiff(x.p, x.it.qty)).sort((a, b) => Math.abs(b.it.diffValue) - Math.abs(a.it.diffValue) || byName(a.p, b.p));
+      else items = all.filter(x => x.it.counted).sort((a, b) => byName(a.p, b.p));
+      items = items.map(x => x.it);
+      const groups = type === 'tax'
+        ? [...TAX_RATES, null].map(rate => ({ tax: rate, items: items.filter(i => i.tax === rate) })).filter(g => g.items.length)
+        : null;
+      return {
+        type, title: REPORT_TITLES[type], company: getMeta('companyName', 'أنوار طيبة للتموين'),
+        stocktake: getMeta('stocktakeName', 'جرد ' + new Date().getFullYear()),
+        device: getMeta('deviceName', '') || '—', date: nowText(),
+        includesTax: priceIncludesTax(), hasBook, stats: st, taxCats: tr.cats, taxTotal: tr.total, items, groups,
+      };
+    }
+
     function exportTaxCsv() {
       const rep = taxReport();
       const rows = [['فئة الضريبة', 'عدد الأصناف', 'أصناف معدودة', 'الكمية المعدودة', 'القيمة قبل الضريبة', 'مبلغ الضريبة', 'القيمة بعد الضريبة']];
@@ -581,7 +631,7 @@
     return {
       init, getMeta, setMeta, importProducts, addProduct, lookup, lookupAll, addCount, undoCount, recent,
       getProduct: id => { const x = S.products.get(id); return x ? view(x) : null; },
-      updateProduct, bulkSetTax, countMatching, taxReport, exportTaxCsv, TAX_RATES,
+      updateProduct, bulkSetTax, countMatching, taxReport, exportTaxCsv, reportPack, TAX_RATES,
       stats, report, exportCsv, mergeCsv, resetCounts, wipeAll,
       get productCount() { return S.products.size; },
     };

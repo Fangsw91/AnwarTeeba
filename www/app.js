@@ -33,13 +33,12 @@ async function boot() {
     document.querySelector('main').innerHTML = '<div class="card warn">تعذّر فتح مخزن البيانات على هذا الجهاز: ' + esc(e.message) + '</div>';
     return;
   }
+  applyFont(store.getMeta('fontSize', 19));
   refreshHeader();
   showTab('count');
 }
 
 function refreshHeader() {
-  $('stName').textContent = stocktakeName();
-  $('who').textContent = store.getMeta('deviceName', '') || 'بدون اسم';
   $('nameCard').hidden = !!store.getMeta('deviceName', '');
   $('noProducts').hidden = store.productCount > 0;
 }
@@ -52,7 +51,7 @@ function showTab(tab) {
   if (tab === 'count') { refreshHeader(); loadRecent(); }
   if (tab === 'report') { renderStats(); renderTaxTable(); loadReport(false); }
   if (tab === 'products') { $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
-  if (tab === 'settings') { $('setIncl').value = store.getMeta('priceIncludesTax', false) ? 'incl' : 'excl'; $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); }
+  if (tab === 'settings') { $('setIncl').value = store.getMeta('priceIncludesTax', false) ? 'incl' : 'excl'; $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); }
 }
 $('nav').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) showTab(b.dataset.tab); });
 
@@ -79,7 +78,6 @@ async function doLookup(text, scanned) {
   const digits = text.replace(/^0+/, '');
   const exact = /^\d{6,}$/.test(text) && items[0].barcode && items[0].barcode.replace(/^0+/, '') === digits ? items[0] : null;
   if (exact) {
-    if (scanned && $('fast').checked) { await autoAdd(exact); return 'added'; }
     selectProduct(exact);
     return 'selected';
   }
@@ -161,17 +159,10 @@ function showNotFound(text) {
   $('nfName').focus();
 }
 
-async function autoAdd(p) {   // p من lookup
-  const r = await store.addCount(p.id, 1, counter());
-  toast(`${p.name} — المجموع ${nf.format(r.counted)} ${p.unit}`, 'ok');
-  $('q').value = '';
-  loadRecent();
-}
-
 $('searchForm').addEventListener('submit', ev => {
   ev.preventDefault();
   const t = $('q').value;
-  enqueue(async () => { if ((await doLookup(t, true)) === 'added') $('q').focus(); });
+  enqueue(() => doLookup(t, true));
 });
 $('q').addEventListener('input', debounce(() => {
   const t = $('q').value.trim();
@@ -267,12 +258,9 @@ function stopScanner() {
 
 function onScanned(code) {
   if (navigator.vibrate) navigator.vibrate(60);
-  if (!$('fast').checked) stopScanner();
+  stopScanner();
   $('q').value = code;
-  enqueue(async () => {
-    const r = await doLookup(code, true);
-    if (r === 'notfound' || r === 'selected') stopScanner();
-  });
+  enqueue(() => doLookup(code, true));
 }
 $('scanBtn').addEventListener('click', openScanner);
 $('scanClose').addEventListener('click', stopScanner);
@@ -375,17 +363,6 @@ $('exportBtn').addEventListener('click', async () => {
   const who = (store.getMeta('deviceName', '') || 'device').replace(/[^\p{L}\p{N}_-]+/gu, '_');
   const name = `jard-${who}-${day}.csv`;
   const text = store.exportCsv();
-  try {
-    if (window.NativeFiles && NativeFiles.isNative()) await NativeFiles.save(name, text);
-    else downloadBlob(name, text);
-  } catch (e) {
-    if (!/cancel/i.test(String(e && e.message))) toast('تعذّر التصدير: ' + (e.message || e), 'err');
-  }
-});
-
-$('exportTaxBtn').addEventListener('click', async () => {
-  const name = `jard-taxes-${new Date().toISOString().slice(0, 10)}.csv`;
-  const text = store.exportTaxCsv();
   try {
     if (window.NativeFiles && NativeFiles.isNative()) await NativeFiles.save(name, text);
     else downloadBlob(name, text);
@@ -503,11 +480,68 @@ $('bulkBtn').addEventListener('click', async () => {
   } catch (e) { toast(e.message, 'err'); }
 });
 
+/* ---------- حجم الخط ---------- */
+function applyFont(px) { document.documentElement.style.fontSize = (Number(px) || 19) + 'px'; }
+function markFont() {
+  const cur = String(Number(store.getMeta('fontSize', 19)) || 19);
+  document.querySelectorAll('#fontSeg button').forEach(b => b.classList.toggle('on', b.dataset.s === cur));
+}
+$('fontSeg').addEventListener('click', async ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  applyFont(b.dataset.s);
+  await store.setMeta('fontSize', Number(b.dataset.s));
+  markFont();
+});
+
+/* ---------- إصدار التقارير ---------- */
+const loadScript = src => new Promise((ok, no) => {
+  const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = () => no(new Error('تعذّر تحميل ' + src));
+  document.head.appendChild(el);
+});
+let repFmt = 'xlsx';
+$('repFmt').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  repFmt = b.dataset.f;
+  document.querySelectorAll('#repFmt button').forEach(x => x.classList.toggle('on', x === b));
+});
+async function saveFile(name, bytes, mime) {
+  if (window.NativeFiles && NativeFiles.isNative()) { await NativeFiles.saveBinary(name, bytes); return; }
+  const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+  const a = document.createElement('a'); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+$('repBtn').addEventListener('click', async () => {
+  const btn = $('repBtn'), note = $('repNote');
+  const type = $('repType').value;
+  btn.disabled = true; note.textContent = 'جارٍ إعداد التقرير…';
+  try {
+    await loadScript('vendor/report-assets.js');
+    if (repFmt === 'xlsx') { if (!window.ExcelJS) await loadScript('vendor/exceljs.min.js'); }
+    else if (!window.jspdf) await loadScript('vendor/jspdf.umd.min.js');
+    const pack = store.reportPack(type);
+    const day = new Date().toISOString().slice(0, 10);
+    const base = { full: 'jard-shamel', tax: 'jard-tax', diff: 'jard-diff', uncounted: 'jard-uncounted' }[type] + '-' + day;
+    if (repFmt === 'xlsx') {
+      const bytes = await Inv.report.buildXlsx(pack, window.InvAssets);
+      await saveFile(base + '.xlsx', bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    } else {
+      const bytes = await Inv.report.buildPdf(pack, window.InvAssets, p => { note.textContent = 'جارٍ إعداد التقرير… ' + Math.round(p * 100) + '%'; });
+      await saveFile(base + '.pdf', bytes, 'application/pdf');
+    }
+    note.textContent = '';
+  } catch (e) {
+    note.textContent = '';
+    if (!/cancel/i.test(String(e && e.message))) toast('تعذّر إصدار التقرير: ' + (e.message || e), 'err');
+  } finally { btn.disabled = false; }
+});
+
 /* ---------- الإعدادات ---------- */
 $('setSave').addEventListener('click', async () => {
   try {
     await store.setMeta('deviceName', $('setName').value.trim());
     await store.setMeta('stocktakeName', $('setStocktake').value.trim() || stocktakeName());
+    await store.setMeta('companyName', $('setCompany').value.trim() || 'أنوار طيبة للتموين');
     await store.setMeta('priceIncludesTax', $('setIncl').value === 'incl');
     refreshHeader();
     toast('تم الحفظ', 'ok');
