@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f7a4a">
+<title>جرد السوبرماركت</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="bar">
+  <div class="title">
+    <span id="stName">جرد السوبرماركت</span>
+    <span class="sub">الجهاز: <span id="who">—</span> · البيانات محفوظة على هذا الجهاز</span>
+  </div>
+</div>
+
+<main>
+
+  <!-- ===== عدّ ===== -->
+  <section id="tab-count" class="grid">
+    <div id="nameCard" class="card" hidden>
+      <h3>اكتب اسمك (أو اسم الجهاز)</h3>
+      <div class="row">
+        <input id="nameInput" maxlength="40" placeholder="مثال: أحمد">
+        <button class="btn" id="nameSave">حفظ</button>
+      </div>
+    </div>
+
+    <div id="noProducts" class="card warn" hidden>ما في أصناف بعد. روح لتبويب «الأصناف» واستورد ملف الأصناف (أو جرّب الأصناف التجريبية).</div>
+
+    <form id="searchForm" class="card" autocomplete="off">
+      <div class="row">
+        <input id="q" placeholder="امسح الباركود أو اكتب اسم الصنف" enterkeyhint="search" autocapitalize="off" autocorrect="off">
+        <button type="button" class="btn" id="scanBtn" aria-label="مسح بالكاميرا">📷</button>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="fast">
+        وضع المسح السريع (كل مسح = +1 تلقائياً)
+      </label>
+    </form>
+
+    <section id="results" class="results" hidden></section>
+
+    <section id="product" class="card" hidden>
+      <div class="prod-name" id="pName"></div>
+      <div class="muted" id="pMeta"></div>
+      <div class="priceline">
+        <span id="pPrice"></span>
+        <button type="button" class="btn ghost small" id="editToggle">✎ تعديل السعر والضريبة</button>
+      </div>
+      <div id="editBox" class="stack editbox" hidden>
+        <label class="field"><span id="edPriceLbl">سعر الشراء للوحدة</span>
+          <input id="edPrice" type="number" inputmode="decimal" step="any" min="0">
+        </label>
+        <label class="field">نسبة الضريبة
+          <select id="edTax"><option value="">غير محدد</option><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option></select>
+        </label>
+        <button type="button" class="btn block" id="edSave">حفظ التعديل</button>
+      </div>
+      <div class="qty-row">
+        <button type="button" class="btn ghost round" id="minus">−</button>
+        <input id="qty" type="number" inputmode="decimal" step="any" min="0" value="1">
+        <button type="button" class="btn ghost round" id="plus">+</button>
+      </div>
+      <div class="chips">
+        <button type="button" data-add="5">+5</button>
+        <button type="button" data-add="10">+10</button>
+        <button type="button" data-add="12">+12</button>
+        <button type="button" data-add="24">+24</button>
+      </div>
+      <div class="stack">
+        <button type="button" class="btn block" id="addBtn">إضافة للجرد</button>
+        <button type="button" class="btn ghost block" id="cancelBtn">إلغاء</button>
+      </div>
+    </section>
+
+    <section id="notfound" class="card" hidden>
+      <div class="prod-name">الصنف غير موجود في القائمة</div>
+      <p class="muted">إذا هو صنف حقيقي، أضفه وسيظهر في التقرير كصنف مضاف.</p>
+      <div class="stack">
+        <input id="nfBarcode" placeholder="الباركود (اختياري)">
+        <input id="nfName" placeholder="اسم الصنف">
+        <input id="nfUnit" placeholder="الوحدة (حبة، كغم، علبة…)" value="حبة">
+        <button type="button" class="btn block" id="nfAdd">إضافة الصنف والعدّ</button>
+        <button type="button" class="btn ghost block" id="nfCancel">إلغاء</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>آخر ما سجّلته</h3>
+      <ul class="list" id="recent"></ul>
+      <div class="muted" id="recentEmpty">لا يوجد شيء بعد.</div>
+    </section>
+  </section>
+
+  <!-- ===== النتائج ===== -->
+  <section id="tab-report" class="grid" hidden>
+    <div class="card">
+      <div class="muted">تقدّم الجرد على هذا الجهاز</div>
+      <div class="big"><span id="pct">0</span>%</div>
+      <div class="progress"><i id="bar" style="width:0%"></i></div>
+      <div class="muted"><b id="items">0</b> من <b id="products">0</b> صنف</div>
+    </div>
+
+    <div class="seg" id="taxView">
+      <button type="button" data-v="excl" class="on">بدون ضريبة</button>
+      <button type="button" data-v="incl">مع الضريبة</button>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><span>عمليات العدّ</span><b id="entries">0</b></div>
+      <div class="kpi"><span>أصناف مضافة</span><b id="newItems">0</b></div>
+      <div class="kpi"><span>المعدود قبل الضريبة</span><b id="value">0.00</b></div>
+      <div class="kpi"><span>المعدود بعد الضريبة</span><b id="valueG">0.00</b></div>
+      <div class="kpi"><span>مبلغ الضريبة</span><b id="taxAmt">0.00</b></div>
+      <div class="kpi" data-book><span>أصناف فيها فرق</span><b id="diffs">0</b></div>
+      <div class="kpi" data-book><span id="shortLbl">قيمة النقص</span><b class="neg" id="short">0.00</b></div>
+      <div class="kpi" data-book><span id="surplusLbl">قيمة الزيادة</span><b class="pos" id="surplus">0.00</b></div>
+    </div>
+
+    <div class="card">
+      <h3>تقرير فئات الضريبة (الأصناف المعدودة)</h3>
+      <div class="note" style="margin-bottom:6px">قبل / بعد = القيمة قبل وبعد الضريبة</div>
+      <div class="tablewrap">
+        <table id="taxTable">
+          <thead><tr><th>الفئة (معدود/كل)</th><th>قبل</th><th>الضريبة</th><th>بعد</th></tr></thead>
+          <tbody id="taxRows"></tbody>
+        </table>
+      </div>
+      <div class="note" id="taxNote"></div>
+      <button class="btn ghost block" id="exportTaxBtn" style="margin-top:10px">تصدير تقرير الضرائب</button>
+    </div>
+
+    <div class="card stack">
+      <button class="btn block" id="exportBtn">تصدير الجرد (Excel / CSV)</button>
+      <div class="note">صدّر نسخة بشكل دوري، لأن البيانات موجودة على هذا الجهاز فقط.</div>
+      <label class="field">دمج ملفات من أجهزة ثانية (ملفات التصدير)
+        <input type="file" id="mergeFiles" multiple>
+      </label>
+      <button class="btn ghost block" id="mergeBtn">دمج الملفات المختارة</button>
+      <div id="mergeRes" class="note pre"></div>
+    </div>
+
+    <div class="card">
+      <div class="filters">
+        <select id="fFilter">
+          <option value="all">كل الأصناف</option>
+          <option value="diff" data-book>فيها فرق</option>
+          <option value="uncounted">لم تُعدّ بعد</option>
+          <option value="counted">معدودة (الأعلى قيمة أولاً)</option>
+        </select>
+        <select id="fTax">
+          <option value="all">كل فئات الضريبة</option><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option><option value="none">غير محدد</option>
+        </select>
+        <input id="fQ" placeholder="بحث بالاسم أو الباركود">
+      </div>
+      <div class="note" id="fTotal"></div>
+      <div id="rows"></div>
+      <button class="btn ghost block" id="more" hidden style="margin-top:10px">عرض المزيد</button>
+    </div>
+  </section>
+
+  <!-- ===== الأصناف ===== -->
+  <section id="tab-products" class="grid" hidden>
+    <div class="card stack">
+      <h3>استيراد الأصناف من ملف Excel أو CSV</h3>
+      <div class="note">اختر ملف <b>.xls</b> أو <b>.xlsx</b> أو <b>.csv</b> (مثل ملف أصناف برنامج المحاسبة). التطبيق بيتعرف على الأعمدة من عناوينها: <b>رقم المادة، اسم المادة، آخر سعر شراء</b>، وإذا كان فيه عمود كمية أو وحدة بيقرأهم كمان. بدون عناوين، الترتيب: الباركود، الاسم، الوحدة، الكمية، التكلفة. إعادة الاستيراد تحدّث الأصناف ولا تمسح العدّ.</div>
+      <input type="file" id="file" accept=".xls,.xlsx,.csv,.txt,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+      <button class="btn block" id="importBtn">استيراد</button>
+      <div id="importRes" class="note pre"></div>
+      <div class="note">عدد الأصناف الحالي: <b id="pCount">0</b></div>
+      <button class="btn ghost block" id="sampleBtn">جرّب بأصناف تجريبية</button>
+    </div>
+  
+    <div class="card stack">
+      <h3>تحديد الضريبة للأصناف</h3>
+      <div class="note">اكتب كلمة (مثل «حليب» أو «المراعي») واختر النسبة، فتنطبق على كل الأصناف المطابقة. اتركها فاضية لتطبيقها على كل الأصناف. وبتقدر تعدّل صنف صنف من شاشة العدّ (✎ تعديل السعر والضريبة). إذا ملفك فيه عمود «الضريبة» بيقرأه تلقائياً عند الاستيراد.</div>
+      <input id="bulkQ" placeholder="كلمة بحث (مثال: المراعي) — أو فاضي لكل الأصناف">
+      <div class="note" id="bulkCount"></div>
+      <select id="bulkTax"><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option></select>
+      <button class="btn block" id="bulkBtn">تطبيق على الأصناف المطابقة</button>
+      <div id="bulkRes" class="note"></div>
+      <div class="note" id="taxUnset"></div>
+    </div>
+  </section>
+
+  <!-- ===== الإعدادات ===== -->
+  <section id="tab-settings" class="grid" hidden>
+    <div class="card stack">
+      <h3>هذا الجهاز</h3>
+      <label class="field">اسمك / اسم الجهاز
+        <input id="setName" maxlength="40">
+      </label>
+      <label class="field">اسم الجرد
+        <input id="setStocktake" maxlength="60">
+      </label>
+      <label class="field">الأسعار بالملف (آخر سعر شراء)
+        <select id="setIncl">
+          <option value="excl">غير شاملة الضريبة</option>
+          <option value="incl">شاملة الضريبة</option>
+        </select>
+      </label>
+      <button class="btn block" id="setSave">حفظ</button>
+    </div>
+
+    <div class="card stack danger-zone">
+      <h3>تصفير</h3>
+      <div class="note">صدّر نسخة قبل أي تصفير، لأن المحذوف ما بيرجع.</div>
+      <button class="btn danger block" id="resetBtn">بدء جرد جديد (مسح العدّ وإبقاء الأصناف)</button>
+      <button class="btn ghost block" id="wipeBtn">مسح كل شي (الأصناف والعدّ)</button>
+    </div>
+  </section>
+
+</main>
+
+<nav class="nav" id="nav">
+  <button data-tab="count" class="on"><i>🔍</i>عدّ</button>
+  <button data-tab="report"><i>📊</i>النتائج</button>
+  <button data-tab="products"><i>📦</i>الأصناف</button>
+  <button data-tab="settings"><i>⚙️</i>الإعدادات</button>
+</nav>
+
+<div id="scanner" hidden>
+  <video id="video" playsinline muted></video>
+  <div class="frame"></div>
+  <div class="hint">وجّه الكاميرا نحو الباركود</div>
+  <button class="btn" id="scanClose">إغلاق</button>
+</div>
+
+<div id="toast"></div>
+
+<script src="vendor/zxing.min.js"></script>
+<script src="native.js"></script>
+<script src="csv.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+/* واجهة التطبيق الأوفلاين. كل البيانات محلية (IndexedDB) عبر Inv.createStore() */
+const $ = id => document.getElementById(id);
+const store = Inv.createStore();
+const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
+const mf = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pf = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+const inc = () => store.getMeta('taxView', 'excl') === 'incl';
+const taxTxt = t => (t === null || t === undefined ? 'ضريبة غير محددة' : 'ضريبة ' + t + '%');
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+
+function toast(msg, kind) {
+  const box = $('toast');
+  const el = document.createElement('div');
+  if (kind) el.className = kind;
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(() => el.remove(), kind === 'err' ? 4000 : 2200);
+}
+
+const counter = () => store.getMeta('deviceName', '') || 'هذا الجهاز';
+const stocktakeName = () => store.getMeta('stocktakeName', 'جرد ' + new Date().getFullYear());
+let current = null;
+let queue = Promise.resolve();
+const enqueue = fn => (queue = queue.then(fn).catch(e => toast(e.message || 'خطأ', 'err')));
+
+/* ---------- الإقلاع ---------- */
+async function boot() {
+  try {
+    await store.init();
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  } catch (e) {
+    document.querySelector('main').innerHTML = '<div class="card warn">تعذّر فتح مخزن البيانات على هذا الجهاز: ' + esc(e.message) + '</div>';
+    return;
+  }
+  refreshHeader();
+  showTab('count');
+}
+
+function refreshHeader() {
+  $('stName').textContent = stocktakeName();
+  $('who').textContent = store.getMeta('deviceName', '') || 'بدون اسم';
+  $('nameCard').hidden = !!store.getMeta('deviceName', '');
+  $('noProducts').hidden = store.productCount > 0;
+}
+
+/* ---------- التبويبات ---------- */
+function showTab(tab) {
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  ['count', 'report', 'products', 'settings'].forEach(t => { $('tab-' + t).hidden = t !== tab; });
+  if (tab !== 'count') stopScanner();
+  if (tab === 'count') { refreshHeader(); loadRecent(); }
+  if (tab === 'report') { renderStats(); renderTaxTable(); loadReport(false); }
+  if (tab === 'products') { $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
+  if (tab === 'settings') { $('setIncl').value = store.getMeta('priceIncludesTax', false) ? 'incl' : 'excl'; $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); }
+}
+$('nav').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) showTab(b.dataset.tab); });
+
+/* ---------- الاسم ---------- */
+$('nameSave').addEventListener('click', async () => {
+  const v = $('nameInput').value.trim();
+  if (!v) { toast('اكتب اسمك', 'err'); return; }
+  await store.setMeta('deviceName', v);
+  refreshHeader();
+});
+
+/* ---------- البحث والمسح ---------- */
+function hideAll() {
+  $('results').hidden = true; $('product').hidden = true; $('notfound').hidden = true;
+  current = null;
+}
+
+async function doLookup(text, scanned) {
+  text = text.trim();
+  if (!text) return null;
+  const { items, total } = store.lookupAll(text, 200);
+  hideAll();
+  if (!items.length) { showNotFound(text); return 'notfound'; }
+  const digits = text.replace(/^0+/, '');
+  const exact = /^\d{6,}$/.test(text) && items[0].barcode && items[0].barcode.replace(/^0+/, '') === digits ? items[0] : null;
+  if (exact) {
+    if (scanned && $('fast').checked) { await autoAdd(exact); return 'added'; }
+    selectProduct(exact);
+    return 'selected';
+  }
+  if (items.length === 1 && scanned) { selectProduct(items[0]); return 'selected'; }   // Enter على نتيجة وحيدة
+  renderResults(items, total);
+  return 'list';
+}
+
+function renderResults(items, total) {
+  const box = $('results');
+  const price = p => pf.format(inc() ? p.priceGross : p.priceBase);
+  box.innerHTML = `<div class="info">${nf.format(total)} صنف مطابق${total > items.length ? ' (أول ' + items.length + ' — زد كلمة للتضييق)' : ''}</div>` +
+    items.map((p, i) =>
+    `<button type="button" class="result" data-i="${i}">
+       <span>${esc(p.name)}<small>${esc(p.barcode || 'بدون باركود')} · ${esc(p.unit)} · ${price(p)}
+         <span class="tg ${p.tax === null ? 'none' : ''}">${p.tax === null ? 'بدون ضريبة محددة' : p.tax + '%'}</span></small></span>
+       <span class="cnt">${p.counted ? nf.format(p.counted) : ''}</span>
+     </button>`).join('');
+  box._items = items;
+  box.hidden = false;
+}
+$('results').addEventListener('click', ev => {
+  const b = ev.target.closest('.result');
+  if (b) selectProduct($('results')._items[+b.dataset.i]);
+});
+
+function renderProductInfo() {
+  const p = current;
+  $('pName').textContent = p.name;
+  $('pMeta').textContent = (p.barcode || 'بدون باركود') + ' · ' + p.unit +
+    (p.counted ? ' · المعدود لحد الآن: ' + nf.format(p.counted) : '');
+  $('pPrice').textContent = `السعر ${pf.format(p.priceBase)} قبل الضريبة · ${pf.format(p.priceGross)} بعدها · ${taxTxt(p.tax)}`;
+}
+
+function selectProduct(p) {
+  hideAll();
+  current = p;
+  renderProductInfo();
+  $('editBox').hidden = true;
+  $('qty').value = '1';
+  $('product').hidden = false;
+  $('qty').focus();
+  $('qty').select();
+}
+
+$('editToggle').addEventListener('click', () => {
+  if (!current) return;
+  const open = $('editBox').hidden;
+  $('editBox').hidden = !open;
+  if (open) {
+    $('edPriceLbl').textContent = 'سعر الشراء للوحدة (' + (store.getMeta('priceIncludesTax', false) ? 'شامل الضريبة' : 'قبل الضريبة') + ')';
+    $('edPrice').value = current.cost;
+    $('edTax').value = current.tax === null ? '' : String(current.tax);
+    $('edPrice').focus();
+  }
+});
+$('edSave').addEventListener('click', async () => {
+  if (!current) return;
+  const price = $('edPrice').value.trim();
+  try {
+    const v = await store.updateProduct(current.id, {
+      cost: price === '' ? current.cost : parseFloat(price),
+      tax: $('edTax').value === '' ? null : Number($('edTax').value),
+    });
+    current = v;
+    renderProductInfo();
+    $('editBox').hidden = true;
+    toast('تم حفظ السعر والضريبة', 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+function showNotFound(text) {
+  hideAll();
+  const looksCode = /^[\w-]{6,}$/.test(text) && /\d/.test(text);
+  $('nfBarcode').value = looksCode ? text : '';
+  $('nfName').value = looksCode ? '' : text;
+  $('nfUnit').value = 'حبة';
+  $('notfound').hidden = false;
+  $('nfName').focus();
+}
+
+async function autoAdd(p) {   // p من lookup
+  const r = await store.addCount(p.id, 1, counter());
+  toast(`${p.name} — المجموع ${nf.format(r.counted)} ${p.unit}`, 'ok');
+  $('q').value = '';
+  loadRecent();
+}
+
+$('searchForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const t = $('q').value;
+  enqueue(async () => { if ((await doLookup(t, true)) === 'added') $('q').focus(); });
+});
+$('q').addEventListener('input', debounce(() => {
+  const t = $('q').value.trim();
+  if (!t) { hideAll(); return; }
+  // أرقام فقط = غالباً باركود (ننتظر Enter)، نص = بحث مباشر بالاسم
+  if (t.length >= 2 && !/^\d+$/.test(t)) enqueue(() => doLookup(t, false));
+}, 250));
+
+/* ---------- الكمية والإضافة ---------- */
+const qtyVal = () => parseFloat($('qty').value) || 0;
+$('plus').addEventListener('click', () => { $('qty').value = +(qtyVal() + 1).toFixed(3); });
+$('minus').addEventListener('click', () => { $('qty').value = Math.max(0, +(qtyVal() - 1).toFixed(3)); });
+document.querySelectorAll('.chips button').forEach(b =>
+  b.addEventListener('click', () => { $('qty').value = +(qtyVal() + +b.dataset.add).toFixed(3); }));
+$('qty').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); addCurrent(); } });
+$('addBtn').addEventListener('click', addCurrent);
+$('cancelBtn').addEventListener('click', () => { hideAll(); $('q').value = ''; $('q').focus(); });
+
+let adding = false;
+async function addCurrent() {
+  if (!current || adding) return;
+  const qty = qtyVal();
+  if (qty <= 0) { toast('اكتب كمية أكبر من صفر', 'err'); return; }
+  adding = true;
+  $('addBtn').disabled = true;
+  try {
+    const p = current;
+    const r = await store.addCount(p.id, qty, counter());
+    toast(`تمت إضافة ${nf.format(qty)} — المجموع ${nf.format(r.counted)} ${p.unit}`, 'ok');
+    hideAll();
+    $('q').value = '';
+    $('q').focus();
+    loadRecent();
+  } catch (e) { toast(e.message, 'err'); }
+  finally { adding = false; $('addBtn').disabled = false; }
+}
+
+$('nfCancel').addEventListener('click', () => { hideAll(); $('q').value = ''; $('q').focus(); });
+$('nfAdd').addEventListener('click', async () => {
+  try {
+    const p = await store.addProduct({ barcode: $('nfBarcode').value, name: $('nfName').value, unit: $('nfUnit').value });
+    refreshHeader();
+    selectProduct(store.getProduct(p.id));
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+/* ---------- آخر ما سجّلته ---------- */
+const hhmm = ts => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+function loadRecent() {
+  const items = store.recent(12);
+  $('recentEmpty').hidden = items.length > 0;
+  $('recent').innerHTML = items.map(r =>
+    `<li><div class="grow">${esc(r.name)}<small>${hhmm(r.ts)}</small></div>
+       <div class="q">${nf.format(r.qty)} ${esc(r.unit)}</div>
+       <button class="x" data-id="${r.id}" aria-label="إلغاء">✕</button></li>`).join('');
+}
+$('recent').addEventListener('click', async ev => {
+  const b = ev.target.closest('.x');
+  if (!b || !confirm('إلغاء هذا السطر؟')) return;
+  try { await store.undoCount(+b.dataset.id); toast('تم الإلغاء'); loadRecent(); }
+  catch (e) { toast(e.message, 'err'); }
+});
+
+/* ---------- ماسح الكاميرا (ZXing) ---------- */
+let reader = null, lastCode = '', lastAt = 0;
+
+async function openScanner() {
+  if (!window.ZXing) { toast('ماسح الباركود غير متوفر', 'err'); return; }
+  $('scanner').hidden = false;
+  try {
+    const hints = new Map();
+    const F = ZXing.BarcodeFormat;
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39, F.ITF]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    reader = new ZXing.BrowserMultiFormatReader(hints, 150);
+    await reader.decodeFromVideoDevice(null, 'video', result => {
+      if (!result) return;
+      const code = result.getText(), now = Date.now();
+      const same = code === lastCode && now - lastAt < 2500;
+      lastCode = code; lastAt = now;
+      if (!same) onScanned(code);
+    });
+  } catch (e) {
+    stopScanner();
+    toast('تعذّر فتح الكاميرا. اسمح للتطبيق باستخدام الكاميرا من إعدادات الجهاز.', 'err');
+  }
+}
+
+function stopScanner() {
+  if (reader) { try { reader.reset(); } catch (e) {} reader = null; }
+  $('scanner').hidden = true;
+}
+
+function onScanned(code) {
+  if (navigator.vibrate) navigator.vibrate(60);
+  if (!$('fast').checked) stopScanner();
+  $('q').value = code;
+  enqueue(async () => {
+    const r = await doLookup(code, true);
+    if (r === 'notfound' || r === 'selected') stopScanner();
+  });
+}
+$('scanBtn').addEventListener('click', openScanner);
+$('scanClose').addEventListener('click', stopScanner);
+
+/* ---------- النتائج ---------- */
+function renderStats() {
+  const s = store.stats();
+  const pct = s.products ? Math.min(100, Math.round(s.items / s.products * 100)) : 0;
+  $('pct').textContent = pct;
+  $('bar').style.width = pct + '%';
+  $('items').textContent = nf.format(s.items);
+  $('products').textContent = nf.format(s.products);
+  $('entries').textContent = nf.format(s.entries);
+  $('newItems').textContent = nf.format(s.newItems);
+  $('value').textContent = mf.format(s.value);
+  $('valueG').textContent = mf.format(s.valueG);
+  $('taxAmt').textContent = mf.format(s.tax);
+  $('diffs').textContent = nf.format(s.diffs);
+  const g = inc();
+  $('short').textContent = mf.format(g ? s.shortG : s.short);
+  $('surplus').textContent = mf.format(g ? s.surplusG : s.surplus);
+  $('shortLbl').textContent = g ? 'قيمة النقص (مع الضريبة)' : 'قيمة النقص (بدون ضريبة)';
+  $('surplusLbl').textContent = g ? 'قيمة الزيادة (مع الضريبة)' : 'قيمة الزيادة (بدون ضريبة)';
+  const hasBook = s.withBook > 0;
+  document.querySelectorAll('[data-book]').forEach(el => { el.hidden = !hasBook; });
+  if (!hasBook && $('fFilter').value === 'diff') $('fFilter').value = 'all';
+  document.querySelectorAll('#taxView button').forEach(b => b.classList.toggle('on', b.dataset.v === (g ? 'incl' : 'excl')));
+}
+
+function renderTaxTable() {
+  const r = store.taxReport();
+  const row = c => `<tr data-tax="${c.tax === null ? 'none' : c.tax}"><td>${c.tax === null ? 'غير محدد*' : c.tax + '%'}<br><small>${nf.format(c.items)}/${nf.format(c.products)}</small></td>
+    <td>${mf.format(c.base)}</td><td>${mf.format(c.taxAmount)}</td><td>${mf.format(c.gross)}</td></tr>`;
+  const unset = r.cats[r.cats.length - 1];
+  const cats = r.cats.filter(c => c.tax !== null || c.products > 0);
+  const t = r.total;
+  $('taxRows').innerHTML = cats.map(row).join('') +
+    `<tr class="tot"><td>المجموع<br><small>${nf.format(t.items)}/${nf.format(t.products)}</small></td><td>${mf.format(t.base)}</td><td>${mf.format(t.taxAmount)}</td><td>${mf.format(t.gross)}</td></tr>`;
+  $('taxNote').textContent = (unset.products
+    ? `* ${nf.format(unset.products)} صنف ما انحدد له ضريبة (محسوب 0%). حدّدها من تبويب «الأصناف». `
+    : '') + 'اضغط على فئة لعرض أصنافها. الأسعار ' + (r.includesTax ? 'شاملة الضريبة (من الإعدادات).' : 'غير شاملة الضريبة (من الإعدادات).');
+}
+$('taxRows').addEventListener('click', ev => {
+  const tr = ev.target.closest('tr[data-tax]');
+  if (!tr) return;
+  $('fTax').value = tr.dataset.tax;
+  $('fFilter').value = 'counted';
+  loadReport(false);
+  $('rows').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+$('taxView').addEventListener('click', async ev => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  await store.setMeta('taxView', b.dataset.v);
+  renderStats(); loadReport(false);
+});
+
+let reportOffset = 0;
+function loadReport(append) {
+  if (!append) reportOffset = 0;
+  const r = store.report($('fFilter').value, $('fQ').value, reportOffset, 100, $('fTax').value);
+  const g = inc();
+  const html = r.rows.map(x => {
+    const d = x.diff;
+    const diff = x.uncounted ? 'لم يُعدّ'
+      : d === null ? `<b>${mf.format(g ? x.amountG : x.amount)}</b>`
+      : d === 0 ? 'مطابق'
+      : `<b class="${d < 0 ? 'neg' : 'pos'}">${d > 0 ? '+' : ''}${nf.format(d)}</b>`;
+    const line = (x.system === null ? '' : `دفتري ${nf.format(x.system)} · `) + `معدود ${x.uncounted ? '—' : nf.format(x.counted)}`;
+    const val = !x.uncounted && d !== null ? `<span>${mf.format(g ? x.amountG : x.amount)} قيمة المعدود</span>` : '';
+    return `<div class="rrow ${x.uncounted ? 'unc' : ''}">
+      <div class="grow">${esc(x.name)}<small>${esc(x.barcode || 'بدون باركود')} · ${esc(x.unit)} · ${x.tax === null ? 'ضريبة غير محددة' : 'ضريبة ' + x.tax + '%'}</small></div>
+      <div class="nums"><span>${line}</span>${diff}${val}</div>
+    </div>`;
+  }).join('');
+  $('rows').innerHTML = append ? $('rows').innerHTML + html : html;
+  $('fTotal').textContent = nf.format(r.total) + ' صنف';
+  $('more').hidden = !r.hasMore;
+  reportOffset += r.rows.length;
+}
+$('fFilter').addEventListener('change', () => loadReport(false));
+$('fTax').addEventListener('change', () => loadReport(false));
+$('fQ').addEventListener('input', debounce(() => loadReport(false), 250));
+$('more').addEventListener('click', () => loadReport(true));
+
+/* ---------- تصدير ودمج ---------- */
+function downloadBlob(name, text) {
+  const url = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+$('exportBtn').addEventListener('click', async () => {
+  if (!store.getMeta('deviceName', '')) {
+    toast('اكتب اسم الجهاز أولاً من «الإعدادات» (اسم مختلف لكل جهاز)', 'err');
+    return;
+  }
+  const day = new Date().toISOString().slice(0, 10);
+  const who = (store.getMeta('deviceName', '') || 'device').replace(/[^\p{L}\p{N}_-]+/gu, '_');
+  const name = `jard-${who}-${day}.csv`;
+  const text = store.exportCsv();
+  try {
+    if (window.NativeFiles && NativeFiles.isNative()) await NativeFiles.save(name, text);
+    else downloadBlob(name, text);
+  } catch (e) {
+    if (!/cancel/i.test(String(e && e.message))) toast('تعذّر التصدير: ' + (e.message || e), 'err');
+  }
+});
+
+$('exportTaxBtn').addEventListener('click', async () => {
+  const name = `jard-taxes-${new Date().toISOString().slice(0, 10)}.csv`;
+  const text = store.exportTaxCsv();
+  try {
+    if (window.NativeFiles && NativeFiles.isNative()) await NativeFiles.save(name, text);
+    else downloadBlob(name, text);
+  } catch (e) {
+    if (!/cancel/i.test(String(e && e.message))) toast('تعذّر التصدير: ' + (e.message || e), 'err');
+  }
+});
+
+$('mergeBtn').addEventListener('click', async () => {
+  const files = [...$('mergeFiles').files];
+  if (!files.length) { toast('اختر ملف واحد على الأقل', 'err'); return; }
+  const out = [];
+  for (const f of files) {
+    try {
+      const text = Inv.csv.decodeBuffer(await f.arrayBuffer());
+      const fallback = f.name.replace(/\.[^.]+$/, '').replace(/^jard-/, '');
+      const r = await store.mergeCsv(text, fallback);
+      out.push(`✓ جهاز «${r.label}»: دُمج ${nf.format(r.merged)} صنف` + (r.created ? ` (منها ${r.created} صنف جديد)` : '') +
+        (r.replaced ? ' — استبدل الدمج السابق من نفس الجهاز' : ''));
+    } catch (e) {
+      out.push(`✗ ${f.name}: ${e.message}`);
+    }
+  }
+  $('mergeRes').textContent = out.join('\n');
+  $('mergeFiles').value = '';
+  renderStats(); loadReport(false); refreshHeader();
+});
+
+/* ---------- الأصناف ---------- */
+function showImport(r) {
+  let t = `تم: ${nf.format(r.inserted)} صنف جديد، ${nf.format(r.updated)} محدّث، ${nf.format(r.skipped)} متجاهَل.`;
+  if (r.duplicates) t += `\n${nf.format(r.duplicates)} صنف باركوده مكرر بالملف (أُضيفوا بدون باركود، تلاقيهم بالاسم).`;
+  if (r.errors.length) t += '\n' + r.errors.join('\n');
+  $('importRes').textContent = t;
+  $('pCount').textContent = nf.format(store.productCount);
+  refreshHeader();
+}
+
+let xlsxLoading = null;
+function loadXlsx() {
+  if (window.XLSX) return Promise.resolve();
+  if (!xlsxLoading) {
+    xlsxLoading = new Promise((res, rej) => {
+      const el = document.createElement('script');
+      el.src = 'vendor/xlsx.full.min.js';
+      el.onload = res;
+      el.onerror = () => { xlsxLoading = null; rej(new Error('تعذّر تحميل قارئ Excel')); };
+      document.head.appendChild(el);
+    });
+  }
+  return xlsxLoading;
+}
+
+async function readTable(file) {
+  const buf = await file.arrayBuffer();
+  const b = new Uint8Array(buf);
+  const isXls = b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0;   // xls قديم
+  const isZip = b[0] === 0x50 && b[1] === 0x4B;                                      // xlsx
+  if (isXls || isZip) {
+    await loadXlsx();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if (!ws) throw new Error('الملف ما فيه أي ورقة');
+    return XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+  }
+  return Inv.csv.parse(Inv.csv.decodeBuffer(buf));
+}
+
+$('importBtn').addEventListener('click', async () => {
+  const f = $('file').files[0];
+  if (!f) { toast('اختر ملف أولاً', 'err'); return; }
+  $('importBtn').disabled = true;
+  $('importRes').textContent = 'جاري قراءة الملف…';
+  try {
+    const rows = await readTable(f);
+    $('importRes').textContent = 'جاري الاستيراد (' + nf.format(rows.length) + ' سطر)…';
+    await new Promise(r => setTimeout(r, 30));
+    showImport(await store.importProducts(rows));
+    $('file').value = '';
+  } catch (e) { $('importRes').textContent = ''; toast(e.message || 'تعذّر قراءة الملف', 'err'); }
+  finally { $('importBtn').disabled = false; }
+});
+$('sampleBtn').addEventListener('click', async () => {
+  try { showImport(await store.importProducts(Inv.sampleRows)); toast('تمت إضافة الأصناف التجريبية', 'ok'); }
+  catch (e) { toast(e.message, 'err'); }
+});
+
+/* ---------- ضريبة جماعية ---------- */
+function updateBulk() {
+  const q = $('bulkQ').value.trim();
+  const n = store.countMatching(q);
+  const names = q ? store.lookupAll(q, 4).items.map(x => x.name).join('، ') : '';
+  $('bulkCount').textContent = q
+    ? (n ? `${nf.format(n)} صنف مطابق: ${names}${n > 4 ? '…' : ''}` : 'ما في أصناف مطابقة')
+    : `كل الأصناف (${nf.format(n)})`;
+  $('bulkBtn').disabled = n === 0;
+  const unset = store.taxReport().cats.slice(-1)[0].products;
+  $('taxUnset').textContent = unset ? `أصناف بدون ضريبة محددة: ${nf.format(unset)} (محسوبة 0% بالتقارير)` : 'كل الأصناف لها ضريبة محددة.';
+}
+$('bulkQ').addEventListener('input', debounce(updateBulk, 200));
+$('bulkBtn').addEventListener('click', async () => {
+  const q = $('bulkQ').value.trim();
+  const n = store.countMatching(q);
+  const rate = Number($('bulkTax').value);
+  if (!n || !confirm(`تحديد ضريبة ${rate}% لـ ${nf.format(n)} صنف${q ? ' (مطابقة لـ «' + q + '»)' : ' (كل الأصناف)'}؟`)) return;
+  try {
+    const c = await store.bulkSetTax(q, rate);
+    $('bulkRes').textContent = `تم: ${nf.format(c)} صنف صار ${rate}%.`;
+    updateBulk();
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+/* ---------- الإعدادات ---------- */
+$('setSave').addEventListener('click', async () => {
+  try {
+    await store.setMeta('deviceName', $('setName').value.trim());
+    await store.setMeta('stocktakeName', $('setStocktake').value.trim() || stocktakeName());
+    await store.setMeta('priceIncludesTax', $('setIncl').value === 'incl');
+    refreshHeader();
+    toast('تم الحفظ', 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+});
+$('resetBtn').addEventListener('click', async () => {
+  if (!confirm('سيتم مسح كل الكميات المعدودة على هذا الجهاز (الأصناف تبقى). هل صدّرت نسخة؟')) return;
+  if (!confirm('متأكد؟ هذا الإجراء ما بيرجع.')) return;
+  try { await store.resetCounts(); toast('بدأ جرد جديد', 'ok'); showTab('count'); }
+  catch (e) { toast(e.message, 'err'); }
+});
+$('wipeBtn').addEventListener('click', async () => {
+  if (!confirm('سيتم مسح كل الأصناف وكل العدّ من هذا الجهاز. متابعة؟')) return;
+  if (!confirm('متأكد؟ هذا الإجراء ما بيرجع.')) return;
+  try { await store.wipeAll(); toast('تم المسح', 'ok'); showTab('count'); }
+  catch (e) { toast(e.message, 'err'); }
+});
+
+boot();

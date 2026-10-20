@@ -1,0 +1,8 @@
+{
+  "appId": "com.supermarket.inventory",
+  "appName": "جرد السوبرماركت",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}
