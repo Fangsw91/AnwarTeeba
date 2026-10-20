@@ -280,34 +280,93 @@ $('recent').addEventListener('click', async ev => {
 });
 
 /* ---------- ماسح الكاميرا (ZXing) ---------- */
-let reader = null, lastCode = '', lastAt = 0;
+let scan = null, lastCode = '', lastAt = 0;
+const SCAN_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf'];
 
 async function openScanner() {
-  if (!window.ZXing) { toast('ماسح الباركود غير متوفر', 'err'); return; }
+  if (scan) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('الكاميرا غير متاحة على هذا الجهاز', 'err'); return; }
   $('scanner').hidden = false;
+  const st = scan = { stop: false, stream: null, timer: 0, detector: null, zx: null };
   try {
-    const hints = new Map();
-    const F = ZXing.BarcodeFormat;
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39, F.ITF]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    reader = new ZXing.BrowserMultiFormatReader(hints, 150);
-    await reader.decodeFromVideoDevice(null, 'video', result => {
-      if (!result) return;
-      const code = result.getText(), now = Date.now();
-      const same = code === lastCode && now - lastAt < 2500;
-      lastCode = code; lastAt = now;
-      if (!same) onScanned(code);
+    st.stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
     });
+    if (st.stop) { st.stream.getTracks().forEach(t => t.stop()); return; }
+    const track = st.stream.getVideoTracks()[0];
+    const caps = (track.getCapabilities && track.getCapabilities()) || {};
+    if (caps.focusMode && caps.focusMode.includes('continuous')) { try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) {} }
+    $('torchBtn').hidden = !caps.torch; $('torchBtn').classList.remove('on');
+    st.track = track;
+    const v = $('video'); v.srcObject = st.stream; v.setAttribute('playsinline', ''); v.muted = true;
+    await v.play();
+    if ('BarcodeDetector' in window) {
+      try { st.detector = new BarcodeDetector({ formats: SCAN_FORMATS }); } catch (e) { st.detector = null; }
+    }
+    if (!st.detector && window.ZXing) {
+      const hints = new Map();
+      const F = ZXing.BarcodeFormat;
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39, F.ITF]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      st.zx = new ZXing.MultiFormatReader(); st.zx.setHints(hints);
+    }
+    if (!st.detector && !st.zx) throw new Error('no decoder');
+    st.canvas = document.createElement('canvas');
+    let n = 0;
+    const tick = async () => {
+      if (st.stop) return;
+      let code = '';
+      try { code = await scanFrame(st, v, n++); } catch (e) {}
+      if (st.stop) return;
+      if (code) {
+        const now = Date.now(), same = code === lastCode && now - lastAt < 2500;
+        lastCode = code; lastAt = now;
+        if (!same) { onScanned(code); return; }
+      }
+      st.timer = setTimeout(tick, 90);
+    };
+    tick();
   } catch (e) {
     stopScanner();
-    toast('تعذّر فتح الكاميرا. تأكد من منح التطبيق إذن الكاميرا.', 'err');
+    toast(e && /Permission|NotAllowed|Denied/i.test(e.name + e.message) ? 'لم يُمنح التطبيق إذن الكاميرا. فعّله من إعدادات الهاتف.' : 'تعذّر فتح الكاميرا.', 'err');
   }
 }
 
+async function scanFrame(st, v, n) {
+  if (!v.videoWidth) return '';
+  if (st.detector) {
+    const r = await st.detector.detect(v);
+    return r && r.length ? r[0].rawValue : '';
+  }
+  // ZXing: نقرأ شريحة من منتصف الصورة بدقة عالية، ونبدّل أحياناً إلى الصورة كاملة
+  const vw = v.videoWidth, vh = v.videoHeight, c = st.canvas;
+  let sx = 0, sy = 0, sw = vw, sh = vh;
+  if (n % 3 !== 2) { sh = Math.round(vh * 0.45); sy = Math.round((vh - sh) / 2); }
+  const scale = Math.min(1, 1280 / sw);
+  c.width = Math.round(sw * scale); c.height = Math.round(sh * scale);
+  c.getContext('2d', { willReadFrequently: true }).drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  try {
+    const bmp = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(c)));
+    return st.zx.decode(bmp).getText();
+  } catch (e) { return ''; }
+}
+
 function stopScanner() {
-  if (reader) { try { reader.reset(); } catch (e) {} reader = null; }
+  const st = scan; scan = null;
+  if (st) {
+    st.stop = true; clearTimeout(st.timer);
+    if (st.stream) st.stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+  }
+  try { $('video').srcObject = null; } catch (e) {}
   $('scanner').hidden = true;
 }
+
+$('torchBtn').addEventListener('click', async () => {
+  if (!scan || !scan.track) return;
+  const on = !$('torchBtn').classList.contains('on');
+  try { await scan.track.applyConstraints({ advanced: [{ torch: on }] }); $('torchBtn').classList.toggle('on', on); } catch (e) {}
+});
 
 function onScanned(code) {
   if (navigator.vibrate) navigator.vibrate(60);
