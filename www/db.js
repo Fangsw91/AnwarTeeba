@@ -502,13 +502,15 @@
       uncounted: 'تقرير الأصناف غير المعدودة',
     };
     function pad2(n) { return String(n).padStart(2, '0'); }
-    function nowText() {
+    const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    function nowParts() {
       const d = new Date();
-      return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}  ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+      return { day: DAYS[d.getDay()], date: `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`, time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}` };
     }
     const byName = (a, b) => (a._n < b._n ? -1 : a._n > b._n ? 1 : 0);
 
-    function reportPack(type) {
+    function reportPack(type, opts) {
+      opts = opts || {};
       if (!REPORT_TITLES[type]) throw new Error('نوع التقرير غير معروف');
       const st = stats();
       const tr = taxReport();
@@ -536,11 +538,22 @@
       const groups = type === 'tax'
         ? [...TAX_RATES, null].map(rate => ({ tax: rate, items: items.filter(i => i.tax === rate) })).filter(g => g.items.length)
         : null;
+      let title = REPORT_TITLES[type], taxCats = tr.cats, taxTotal = tr.total, sel = null, rate = 'all';
+      if (type === 'tax' && opts.rate !== undefined && opts.rate !== 'all') {
+        rate = opts.rate === 'none' || opts.rate === null ? null : Number(opts.rate);
+        items = items.filter(i => i.tax === rate);
+        groups.splice(0, groups.length, ...groups.filter(g => g.tax === rate));
+        taxCats = tr.cats.filter(c => c.tax === rate);
+        const sm = k => r3(taxCats.reduce((a, c) => a + (c[k] || 0), 0));
+        taxTotal = { items: sm('items'), products: sm('products'), base: sm('base'), taxAmount: sm('taxAmount'), gross: sm('gross') };
+        sel = { items: items.length, base: taxTotal.base, taxAmount: taxTotal.taxAmount, gross: taxTotal.gross };
+        title = rate === null ? 'تقرير الأصناف ذات الضريبة غير المحددة' : 'تقرير فئة الضريبة ' + rate + ' بالمئة';
+      }
+      const dp = nowParts();
       return {
-        type, title: REPORT_TITLES[type], company: getMeta('companyName', 'أنوار طيبة للتموين'),
-        stocktake: getMeta('stocktakeName', 'جرد ' + new Date().getFullYear()),
-        device: getMeta('deviceName', '') || '—', date: nowText(),
-        includesTax: priceIncludesTax(), hasBook, stats: st, taxCats: tr.cats, taxTotal: tr.total, items, groups,
+        type, rate, sel, title, company: getMeta('companyName', 'أنوار طيبة للتموين'),
+        day: dp.day, date: dp.date, time: dp.time,
+        includesTax: priceIncludesTax(), hasBook, stats: st, taxCats, taxTotal, items, groups,
       };
     }
 

@@ -9,7 +9,46 @@ const inc = () => store.getMeta('taxView', 'excl') === 'incl';
 const taxTxt = t => (t === null || t === undefined ? 'ضريبة غير محددة' : 'ضريبة ' + t + '%');
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
+/* ---------- الأصوات والمؤثرات ---------- */
+const FX = {
+  on: true, ctx: null,
+  tone(freq, dur, when, type, vol) {
+    if (!this.on) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      this.ctx = this.ctx || new AC();
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime + (when || 0), o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.12, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(this.ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) {}
+  },
+  tap() { this.tone(720, 0.05, 0, 'sine', 0.09); },
+  tab() { this.tone(520, 0.06, 0, 'triangle', 0.1); this.tone(780, 0.07, 0.05, 'triangle', 0.08); },
+  ok() { this.tone(660, 0.09, 0, 'sine', 0.12); this.tone(990, 0.14, 0.09, 'sine', 0.12); },
+  err() { this.tone(220, 0.16, 0, 'square', 0.07); this.tone(165, 0.2, 0.12, 'square', 0.07); },
+  buzz(ms) { if (this.on && navigator.vibrate) navigator.vibrate(ms); },
+};
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button, .filebtn, .result, #taxTable tr[data-tax]');
+  if (!b || b.disabled) return;
+  if (b.closest('#nav')) { FX.tab(); FX.buzz(12); }
+  else if (b.id === 'addBtn' || b.id === 'edSave' || b.id === 'nfAdd') { /* صوت النجاح عبر الإشعار */ }
+  else { FX.tap(); FX.buzz(8); }
+  // تموّج الضغط
+  const r = b.getBoundingClientRect();
+  if (r.width && r.width < 700 && !b.classList.contains('result')) {
+    const d = document.createElement('span'); d.className = 'ripple';
+    const sz = Math.max(r.width, r.height) * 1.6;
+    d.style.cssText = `width:${sz}px;height:${sz}px;left:${ev.clientX - r.left - sz / 2}px;top:${ev.clientY - r.top - sz / 2}px`;
+    if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
+    b.style.overflow = 'hidden'; b.appendChild(d); setTimeout(() => d.remove(), 600);
+  }
+}, true);
+
 function toast(msg, kind) {
+  if (kind === 'ok') { FX.ok(); FX.buzz(25); } else if (kind === 'err') { FX.err(); FX.buzz([40, 40, 40]); }
   const box = $('toast');
   const el = document.createElement('div');
   if (kind) el.className = kind;
@@ -38,6 +77,7 @@ async function boot() {
     return;
   }
   applyFont(store.getMeta('fontSize', 19));
+  FX.on = store.getMeta('sound', true) !== false;
   refreshHeader();
   showTab('count');
   await new Promise(r => setTimeout(r, Math.max(0, 4000 - (Date.now() - t0))));
@@ -58,7 +98,7 @@ function showTab(tab) {
   if (tab === 'count') { refreshHeader(); loadRecent(); }
   if (tab === 'report') { renderStats(); renderTaxTable(); loadReport(false); }
   if (tab === 'products') { $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
-  if (tab === 'settings') { $('setIncl').value = store.getMeta('priceIncludesTax', false) ? 'incl' : 'excl'; $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); }
+  if (tab === 'settings') { $('setIncl').value = store.getMeta('priceIncludesTax', false) ? 'incl' : 'excl'; $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); }
 }
 $('nav').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) showTab(b.dataset.tab); });
 
@@ -123,21 +163,27 @@ function selectProduct(p) {
   hideAll();
   current = p;
   renderProductInfo();
-  $('editBox').hidden = true;
+  $('editBox').hidden = true; $('editToggle').classList.remove('open');
   $('qty').value = '1';
   $('product').hidden = false;
   $('qty').focus();
   $('qty').select();
 }
 
+const TAX_CHIPS = [['', 'غير محدد'], ['0', '0%'], ['1', '1%'], ['2', '2%'], ['5', '5%'], ['10', '10%'], ['16', '16%']];
+$('edChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v="${v}">${t}</button>`).join('');
+function markChips() { document.querySelectorAll('#edChips button').forEach(b => b.classList.toggle('on', b.dataset.v === $('edTax').value)); }
+$('edChips').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; $('edTax').value = b.dataset.v; markChips(); });
 $('editToggle').addEventListener('click', () => {
   if (!current) return;
   const open = $('editBox').hidden;
   $('editBox').hidden = !open;
+  $('editToggle').classList.toggle('open', open);
   if (open) {
     $('edPriceLbl').textContent = 'سعر الشراء للوحدة (' + (store.getMeta('priceIncludesTax', false) ? 'شامل الضريبة' : 'قبل الضريبة') + ')';
     $('edPrice').value = current.cost;
     $('edTax').value = current.tax === null ? '' : String(current.tax);
+    markChips();
     $('edPrice').focus();
   }
 });
@@ -151,7 +197,7 @@ $('edSave').addEventListener('click', async () => {
     });
     current = v;
     renderProductInfo();
-    $('editBox').hidden = true;
+    $('editBox').hidden = true; $('editToggle').classList.remove('open');
     toast('تم حفظ السعر والضريبة', 'ok');
   } catch (e) { toast(e.message, 'err'); }
 });
@@ -500,12 +546,23 @@ $('fontSeg').addEventListener('click', async ev => {
   markFont();
 });
 
+function markSound() {
+  document.querySelectorAll('#soundSeg button').forEach(b => b.classList.toggle('on', (b.dataset.v === '1') === FX.on));
+}
+$('soundSeg').addEventListener('click', async ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  FX.on = b.dataset.v === '1';
+  await store.setMeta('sound', FX.on);
+  markSound(); FX.ok();
+});
+
 /* ---------- إصدار التقارير ---------- */
 const loadScript = src => new Promise((ok, no) => {
   const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = () => no(new Error('تعذّر تحميل ' + src));
   document.head.appendChild(el);
 });
 let repFmt = 'xlsx';
+$('repType').addEventListener('change', () => { $('repRateBox').hidden = $('repType').value !== 'tax'; });
 $('repFmt').addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b) return;
   repFmt = b.dataset.f;
@@ -526,9 +583,10 @@ $('repBtn').addEventListener('click', async () => {
     await loadScript('vendor/report-assets.js');
     if (repFmt === 'xlsx') { if (!window.ExcelJS) await loadScript('vendor/exceljs.min.js'); }
     else if (!window.jspdf) await loadScript('vendor/jspdf.umd.min.js');
-    const pack = store.reportPack(type);
+    const pack = store.reportPack(type, { rate: $('repRate').value });
     const day = new Date().toISOString().slice(0, 10);
-    const base = { full: 'jard-shamel', tax: 'jard-tax', diff: 'jard-diff', uncounted: 'jard-uncounted' }[type] + '-' + day;
+    const rt = type === 'tax' && $('repRate').value !== 'all' ? '-' + $('repRate').value : '';
+    const base = { full: 'jard-shamel', tax: 'jard-tax' + rt, diff: 'jard-diff', uncounted: 'jard-uncounted' }[type] + '-' + day;
     if (repFmt === 'xlsx') {
       const bytes = await Inv.report.buildXlsx(pack, window.InvAssets);
       await saveFile(base + '.xlsx', bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

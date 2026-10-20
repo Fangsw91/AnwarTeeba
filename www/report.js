@@ -2,8 +2,9 @@
 (function (root) {
   const Inv = (root.Inv = root.Inv || {});
 
-  const NAVY = [40, 35, 93], RED = [224, 31, 38], LIGHT = [232, 231, 243], ZEBRA = [246, 246, 250],
-    INK = [29, 27, 58], MUTED = [106, 105, 133], LINE = [226, 225, 238], WHITE = [255, 255, 255];
+  // تقارير رسمية: أبيض وأسود بلا شعار ولا ألوان
+  const NAVY = [0, 0, 0], RED = [0, 0, 0], LIGHT = [238, 238, 238], ZEBRA = [255, 255, 255],
+    INK = [0, 0, 0], MUTED = [60, 60, 60], LINE = [110, 110, 110], WHITE = [255, 255, 255];
   const hex = c => c.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
   const AR = /[؀-ۿ]/;
 
@@ -40,6 +41,9 @@
 
   function kpisFor(pack) {
     const s = pack.stats;
+    if (pack.type === 'tax' && pack.sel) {
+      return [['عدد الأصناف', fq(pack.sel.items)], ['القيمة قبل الضريبة', f2(pack.sel.base)], ['مبلغ الضريبة', f2(pack.sel.taxAmount)], ['القيمة بعد الضريبة', f2(pack.sel.gross)]];
+    }
     if (pack.type === 'diff') {
       return [
         ['أصناف فيها فرق', fq(s.diffs)],
@@ -72,7 +76,7 @@
     for (const c of cols) if (c.sum) out[c.sum] = Math.round(items.reduce((a, i) => a + (i[c.sum] || 0), 0) * 1000) / 1000;
     return out;
   };
-  const metaLine = pack => `الجرد: ${pack.stocktake}      التاريخ: ${pack.date}      المستخدم: ${pack.device}`;
+  const metaLine = pack => `${pack.day}  ${pack.date}      الوقت: ${pack.time}`;
   const priceNote = pack => (pack.includesTax ? 'أسعار الشراء في الملف شاملة الضريبة' : 'أسعار الشراء في الملف غير شاملة الضريبة');
 
   const toBytes = b => (b instanceof Uint8Array ? b : new Uint8Array(b));
@@ -84,7 +88,7 @@
     assets = assets || {};
     const wb = new ExcelJS.Workbook();
     wb.creator = pack.company; wb.created = new Date();
-    const logoId = assets.logo ? wb.addImage({ base64: assets.logo, extension: 'png' }) : null;
+    const logoId = null;
 
     const font = (o = {}) => Object.assign({ name: 'Arial', size: 11, color: { argb: 'FF' + hex(INK) } }, o);
     const fill = c => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + hex(c) } });
@@ -114,7 +118,7 @@
         cell.value = text; cell.font = f; cell.alignment = { horizontal: 'center', vertical: 'middle' };
         ws.getRow(r).height = h;
       });
-      for (let c = 1; c <= lastCol; c++) ws.getCell(4, c).fill = fill(RED);
+      for (let c = 1; c <= lastCol; c++) ws.getCell(4, c).border = { top: { style: 'medium', color: { argb: 'FF000000' } } };
       ws.getRow(4).height = 4;
       ws.getRow(5).height = 8;
       if (logoId !== null) ws.addImage(logoId, { tl: { col: 0.08, row: 0.1 }, ext: { width: 86, height: 86 } });
@@ -123,7 +127,7 @@
     function tableHeader(ws, row, titles, startCol) {
       titles.forEach((t, i) => {
         const c = ws.getCell(row, startCol + i);
-        c.value = t; c.font = font({ bold: true, color: { argb: 'FFFFFFFF' } }); c.fill = fill(NAVY);
+        c.value = t; c.font = font({ bold: true, color: { argb: 'FF000000' } }); c.fill = fill(LIGHT);
         c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; c.border = border;
       });
       ws.getRow(row).height = 32;
@@ -235,7 +239,7 @@
         ws.mergeCells(row, 2, row, cols.length + 1);
         const t = ws.getCell(row, 2);
         t.value = `${g.tax === null ? 'ضريبة غير محددة (تُحتسب 0%)' : 'فئة الضريبة ' + g.tax + '%'}   —   ${g.items.length} صنف`;
-        t.font = font({ size: 12.5, bold: true, color: { argb: 'FFFFFFFF' } }); t.fill = fill(RED);
+        t.font = font({ size: 12.5, bold: true, color: { argb: 'FF000000' } }); t.fill = fill(LIGHT);
         t.alignment = { horizontal: 'right', vertical: 'middle', readingOrder: 'rtl' };
         ws.getRow(row).height = 26; row++;
         row = itemsTable(ws, row, cols, g.items, { totalLabel: 'مجموع الفئة' }) + 1;
@@ -264,7 +268,7 @@
     doc.addFileToVFS('NotoNaskh-Regular.ttf', assets.fonts.regular); doc.addFont('NotoNaskh-Regular.ttf', 'Naskh', 'normal');
     doc.addFileToVFS('NotoNaskh-Bold.ttf', assets.fonts.bold); doc.addFont('NotoNaskh-Bold.ttf', 'Naskh', 'bold');
     const W = 297, H = 210, M = 10, FOOT = 10;
-    const logo = assets.logo ? 'data:image/png;base64,' + assets.logo : null;
+    
     const tick = () => new Promise(r => setTimeout(r, 0));
 
     const color = (c, kind) => (kind === 'fill' ? doc.setFillColor(...c) : kind === 'draw' ? doc.setDrawColor(...c) : doc.setTextColor(...c));
@@ -288,19 +292,16 @@
     let y = 0, first = true;
     function pageHeader() {
       if (first) {
-        rect(0, 0, W, 31, NAVY);
-        rect(0, 31, W, 1.6, RED);
-        if (logo) { rect(W - M - 24, 3.5, 24, 24, WHITE, 3); doc.addImage(logo, 'PNG', W - M - 23, 4.5, 22, 22); }
-        text(pack.company, W - M - 28, 13, { size: 19, bold: true, color: WHITE, align: 'right' });
-        text(pack.title, W - M - 28, 23, { size: 14, bold: true, color: [255, 205, 207], align: 'right' });
-        text('الجرد: ' + pack.stocktake, M + 2, 12, { size: 10, color: WHITE, align: 'left' });
-        text('التاريخ: ' + pack.date, M + 2, 18.5, { size: 10, color: WHITE, align: 'left' });
-        text('المستخدم: ' + pack.device, M + 2, 25, { size: 10, color: WHITE, align: 'left' });
-        y = 40; first = false;
+        text(pack.company, W / 2, 14, { size: 20, bold: true, align: 'center' });
+        text(pack.title, W / 2, 23, { size: 14, bold: true, align: 'center' });
+        text(pack.day + '  ' + pack.date, W - M, 32, { size: 10.5, align: 'right' });
+        text('الوقت: ' + pack.time, M, 32, { size: 10.5, align: 'left' });
+        color(INK, 'draw'); doc.setLineWidth(0.5); doc.line(M, 35, W - M, 35);
+        y = 42; first = false;
       } else {
-        rect(0, 0, W, 9, NAVY); rect(0, 9, W, 0.9, RED);
-        text(pack.company + '  —  ' + pack.title, W - M, 6.2, { size: 10, bold: true, color: WHITE, align: 'right' });
-        text(pack.stocktake, M, 6.2, { size: 9, color: WHITE, align: 'left' });
+        text(pack.company + '  —  ' + pack.title, W - M, 6.2, { size: 10, bold: true, align: 'right' });
+        text(pack.day + ' ' + pack.date + ' ' + pack.time, M, 6.2, { size: 9, align: 'left' });
+        color(INK, 'draw'); doc.setLineWidth(0.3); doc.line(M, 8.5, W - M, 8.5);
         y = 15;
       }
     }
@@ -311,9 +312,7 @@
       const gap = 5, w = (W - 2 * M - gap * (list.length - 1)) / list.length, h = 20;
       list.forEach(([label, value], i) => {
         const x = W - M - (i + 1) * w - i * gap;
-        rect(x, y, w, h, [250, 250, 253], 2.5);
-        color(LINE, 'draw'); doc.setLineWidth(0.3); doc.roundedRect(x, y, w, h, 2.5, 2.5, 'S');
-        rect(x + w - 1.6, y + 2.5, 1.6, h - 5, RED);
+        color(INK, 'draw'); doc.setLineWidth(0.3); doc.rect(x, y, w, h, 'S');
         text(label, x + w / 2, y + 7, { size: 9.5, color: MUTED, align: 'center' });
         text(value, x + w / 2, y + 15.5, { size: 15, bold: true, color: NAVY, align: 'center' });
       });
@@ -322,7 +321,6 @@
 
     function sectionTitle(s, c) {
       ensure(14);
-      rect(W - M - 2, y, 2, 7, c || RED);
       text(s, W - M - 5, y + 5.5, { size: 12.5, bold: true, color: NAVY, align: 'right' });
       y += 10;
     }
@@ -332,10 +330,10 @@
       const RH = o.rowH || 6.4, HH = 9;
       const drawHead = () => {
         let xr = W - M;
-        rect(M, y, W - 2 * M, HH, NAVY);
+        rect(M, y, W - 2 * M, HH, LIGHT); color(INK, 'draw'); doc.setLineWidth(0.3); doc.rect(M, y, W - 2 * M, HH, 'S');
         cols.forEach(c => {
           const lines = c.title.length > 12 && c.w < 28 ? splitTitle(c.title) : [c.title];
-          lines.forEach((ln, li) => text(ln, xr - c.w / 2, y + (lines.length === 1 ? 6 : 4 + li * 3.6), { size: lines.length === 1 ? 9 : 8, bold: true, color: WHITE, align: 'center' }));
+          lines.forEach((ln, li) => text(ln, xr - c.w / 2, y + (lines.length === 1 ? 6 : 4 + li * 3.6), { size: lines.length === 1 ? 9 : 8, bold: true, color: INK, align: 'center' }));
           xr -= c.w;
         });
         y += HH;
@@ -357,7 +355,7 @@
           }
           xr -= c.w;
         });
-        color(LINE, 'draw'); doc.setLineWidth(0.15); doc.line(M, y + RH, W - M, y + RH);
+        color(LINE, 'draw'); doc.setLineWidth(0.2); doc.line(M, y + RH, W - M, y + RH);
         y += RH; n++;
         if (n % 150 === 0) { if (onProgress) onProgress(Math.min(0.95, n / Math.max(rows.length, 1))); await tick(); }
       }

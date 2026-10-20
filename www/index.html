@@ -10,7 +10,6 @@
 </head>
 <body>
 <div id="loading">
-  <img src="logo.png" alt="">
   <div class="ld-name">أنوار طيبة للتموين</div>
   <div class="ld-bar"><i></i></div>
   <div class="ld-text" id="ldText">جارٍ تحميل الأصناف…</div>
@@ -46,13 +45,16 @@
       <div class="muted" id="pMeta"></div>
       <div class="priceline">
         <span id="pPrice"></span>
-        <button type="button" class="btn ghost small" id="editToggle">✎ تعديل السعر والضريبة</button>
+        <button type="button" class="editbtn" id="editToggle"><i>✎</i><span>تعديل السعر والضريبة</span></button>
       </div>
       <div id="editBox" class="stack editbox" hidden>
         <label class="field"><span id="edPriceLbl">سعر الشراء للوحدة</span>
           <input id="edPrice" type="number" inputmode="decimal" step="any" min="0">
         </label>
-        <label class="field">نسبة الضريبة
+        <div class="field">نسبة الضريبة
+          <div class="taxchips" id="edChips"></div>
+        </div>
+        <label class="field" hidden>
           <select id="edTax"><option value="">غير محدد</option><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option></select>
         </label>
         <button type="button" class="btn block" id="edSave">حفظ التعديل</button>
@@ -138,6 +140,13 @@
           <option value="uncounted">الأصناف غير المعدودة</option>
         </select>
       </label>
+      <label class="field" id="repRateBox" hidden>الفئة
+        <select id="repRate">
+          <option value="all">كل الفئات</option>
+          <option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option>
+          <option value="none">غير محدد</option>
+        </select>
+      </label>
       <div class="seg" id="repFmt">
         <button type="button" data-f="xlsx" class="on">إكسل</button>
         <button type="button" data-f="pdf">PDF</button>
@@ -219,6 +228,14 @@
         <input id="setCompany" maxlength="60">
       </label>
       <button class="btn block" id="setSave">حفظ</button>
+    </div>
+
+    <div class="card stack">
+      <h3>الأصوات والمؤثرات</h3>
+      <div class="seg" id="soundSeg">
+        <button type="button" data-v="1">تشغيل</button>
+        <button type="button" data-v="0">إيقاف</button>
+      </div>
     </div>
 
     <div class="card stack">

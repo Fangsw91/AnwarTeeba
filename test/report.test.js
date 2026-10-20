@@ -18,7 +18,7 @@ const out = process.argv[2] || require('os').tmpdir();
   const ps = []; for (const q of ['حليب', 'أرز']) ps.push(...s.lookupAll(q, 200).items);
   let n = 0; for (const p of ps) { await s.updateProduct(p.id, { tax: [0, 1, 2, 5, 10, 16][n % 6] }); if (n % 2 === 0) await s.addCount(p.id, n % 7 + 1, 'أحمد'); n++; }
   for (const type of ['full', 'tax', 'diff', 'uncounted']) {
-    const pack = s.reportPack(type);
+    const pack = s.reportPack(type, type === 'tax' ? { rate: process.env.RATE || 'all' } : {});
     const x = await Inv.report.buildXlsx(pack, assets); assert.ok(x.length > 5000);
     fs.writeFileSync(path.join(out, type + '.xlsx'), x);
     const p = await Inv.report.buildPdf(pack, assets); assert.ok(p.length > 5000);

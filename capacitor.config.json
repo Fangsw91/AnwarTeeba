@@ -2,6 +2,7 @@
   "appId": "com.supermarket.inventory",
   "appName": "Jard 26",
   "webDir": "www",
+  "backgroundColor": "#28235d",
   "android": {
     "allowMixedContent": false
   }
