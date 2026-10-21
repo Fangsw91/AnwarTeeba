@@ -298,7 +298,7 @@
     const lookup = (text, limit) => lookupAll(text, limit || 20).items;
 
     /* ---------- السعر والضريبة ---------- */
-    const priceIncludesTax = () => !!getMeta('priceIncludesTax', false);
+    const priceIncludesTax = () => !!getMeta('priceIncludesTax', true);
     /** سعر الوحدة: قبل الضريبة (base) وبعدها (gross). tax = مبلغ الضريبة للوحدة */
     function money(p) {
       const t = (p.tax || 0) / 100;
@@ -395,14 +395,14 @@
     }
 
     /** الأصناف الأكثر عدّاً على هذا الجهاز (حسب عدد مرّات التسجيل) */
-    function topCounted(n) {
+    function topCounted(n, min) {
       const m = new Map();
       for (const c of S.counts) {
         if (isMerged(c)) continue;
         const e = m.get(c.productId) || { n: 0, ts: 0 };
         e.n++; e.ts = Math.max(e.ts, c.ts); m.set(c.productId, e);
       }
-      return [...m.entries()].filter(([id]) => S.products.has(id))
+      return [...m.entries()].filter(([id, e]) => S.products.has(id) && e.n >= (min || 1))
         .sort((a, b) => b[1].n - a[1].n || b[1].ts - a[1].ts).slice(0, n || 6)
         .map(([id, e]) => ({ id, name: S.products.get(id).name, times: e.n }));
     }

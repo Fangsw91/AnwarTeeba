@@ -258,6 +258,8 @@ async function t(name, fn) {
   await T.addCount(T.lookup('1005')[0].id, 2, 'x');    // 2 × 5.00 @0%
   await T.addCount(T.lookup('1006')[0].id, 1, 'x');    // 1 × 10.00 @غير محدد
 
+  await t('الافتراضي: أسعار الشراء شاملة الضريبة', () => { assert.equal(T.taxReport().includesTax, true); });
+  await T.setMeta('priceIncludesTax', false);
   await t('الأسعار غير شاملة الضريبة: قبل/ضريبة/بعد', () => {
     const s = T.stats();
     assert.equal(s.value, 10 + 6 + 10 + 10);                                  // 36.00

@@ -106,6 +106,7 @@ async function boot() {
     $('loading').hidden = true;
     return;
   }
+  if (store.getMeta('priceIncludesTax', false) !== true) await store.setMeta('priceIncludesTax', true);   // أسعار الشراء شاملة الضريبة دائماً
   applyFont(store.getMeta('fontSize', 19));
   FX.on = store.getMeta('sound', true) !== false;
   refreshHeader();
@@ -129,7 +130,7 @@ function showTab(tab) {
   if (tab === 'count') { refreshHeader(); loadRecent(); }
   if (tab === 'report') { renderStats(); renderTaxTable(); loadReport(false); loadRecent(); }
   if (tab === 'products') { $('cePanel').hidden = true; loadCe(); $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
-  if (tab === 'settings') { $('setIncl').value = store.getMeta('priceIncludesTax', false) ? 'incl' : 'excl'; $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); }
+  if (tab === 'settings') { $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); }
 }
 $('nav').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) showTab(b.dataset.tab); });
 
@@ -148,7 +149,7 @@ function hideAll() {
   renderFav();
 }
 function renderFav() {
-  const top = store.topCounted(6);
+  const top = store.topCounted(6, 6);
   $('favChips').innerHTML = top.map(t => `<button type="button" data-id="${t.id}">${esc(t.name)}<small>${nf.format(t.times)}×</small></button>`).join('');
   favVis(top.length > 0);
 }
@@ -180,7 +181,7 @@ async function doLookup(text, scanned) {
 
 function renderResults(items, total) {
   const box = $('results');
-  const price = p => pf.format(p.priceBase);
+  const price = p => pf.format(p.priceGross);
   box.innerHTML = `<div class="info">${nf.format(total)} صنف مطابق${total > items.length ? ' (عرض أول ' + items.length + ')' : ''}</div>` +
     items.map((p, i) =>
     `<button type="button" class="result" data-i="${i}">
@@ -201,7 +202,7 @@ function renderProductInfo() {
   $('pName').textContent = p.name;
   $('pMeta').textContent = (p.barcode || 'بدون باركود') + ' · ' + p.unit +
     (p.counted ? ' · المعدود حتى الآن: ' + nf.format(p.counted) : '');
-  $('pPrice').textContent = `السعر ${pf.format(p.priceBase)} قبل الضريبة · ${pf.format(p.priceGross)} بعدها · ${taxTxt(p.tax)}`;
+  $('pPrice').textContent = `السعر ${pf.format(p.priceGross)} شامل الضريبة · ${taxTxt(p.tax)}`;
 }
 
 function selectProduct(p) {
@@ -210,7 +211,7 @@ function selectProduct(p) {
   renderProductInfo();
   fillEdit();
   $('qty').value = '';
-  $('product').hidden = false; favVis();
+  $('product').hidden = false; favVis(); setTimeout(updateReady, 0);
   $('prevNote').hidden = !(p.counted > 0);
   $('prevNote').textContent = p.counted > 0 ? `معدود سابقاً: ${nf.format(p.counted)} ${p.unit}` : '';
   $('qty').focus();
@@ -221,7 +222,7 @@ $('edChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v
 function markChips() { document.querySelectorAll('#edChips button').forEach(b => b.classList.toggle('on', b.dataset.v === $('edTax').value)); }
 $('edChips').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; $('edTax').value = b.dataset.v; markChips(); saveEdit(); });
 function fillEdit() {
-  $('edPriceLbl').textContent = 'سعر الشراء للوحدة (' + (store.getMeta('priceIncludesTax', false) ? 'شامل الضريبة' : 'قبل الضريبة') + ')';
+  $('edPriceLbl').textContent = 'سعر الشراء للوحدة (شامل الضريبة)';
   $('edPrice').value = current.cost;
   $('edTax').innerHTML = '<option value=""></option>' + TAX_CHIPS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
   $('edTax').value = current.tax === null ? '' : String(current.tax);
@@ -281,6 +282,13 @@ $('qty').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preven
 $('addBtn').addEventListener('click', addCurrent);
 $('cancelBtn').addEventListener('click', () => { hideAll(); $('q').value = ''; $('q').focus(); });
 
+function updateReady() {
+  const ok = !!current && ($('edTax').value !== '' || current.tax !== null) && qtyVal() > 0;
+  $('addBtn').classList.toggle('ready', ok);
+}
+['input', 'change'].forEach(ev => $('qty').addEventListener(ev, updateReady));
+$('edChips').addEventListener('click', () => setTimeout(updateReady, 0));
+document.querySelectorAll('.chips button, #plus, #minus').forEach(b => b.addEventListener('click', () => setTimeout(updateReady, 0)));
 let adding = false;
 async function addCurrent() {
   if (!current || adding) return;
@@ -754,7 +762,7 @@ $('ceList').addEventListener('click', ev => {
   const merged = r3js(p.counted - store.ownCount(p.id));
   $('ceMeta').textContent = (p.barcode || 'بدون باركود') + ' · ' + p.unit + (merged > 0 ? ' · مدموج من أجهزة أخرى: ' + nf.format(merged) : '');
   $('ceQty').value = store.ownCount(p.id);
-  $('cePriceLbl').textContent = 'سعر الشراء للوحدة (' + (store.getMeta('priceIncludesTax', false) ? 'شامل الضريبة' : 'قبل الضريبة') + ')';
+  $('cePriceLbl').textContent = 'سعر الشراء للوحدة (شامل الضريبة)';
   $('cePrice').value = p.cost;
   ceTax = p.tax; markCe();
   $('cePanel').hidden = false;
@@ -787,7 +795,6 @@ $('setSave').addEventListener('click', async () => {
     await store.setMeta('deviceName', $('setName').value.trim());
     await store.setMeta('stocktakeName', $('setStocktake').value.trim() || stocktakeName());
     await store.setMeta('companyName', $('setCompany').value.trim() || 'أنوار طيبة للتموين');
-    await store.setMeta('priceIncludesTax', $('setIncl').value === 'incl');
     refreshHeader();
     toast('تم الحفظ', 'ok');
   } catch (e) { toast(e.message, 'err'); }
