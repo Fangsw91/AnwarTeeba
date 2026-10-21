@@ -8,13 +8,34 @@ const pf = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFra
 const taxTxt = t => (t === null || t === undefined ? 'ضريبة غير محددة' : 'ضريبة ' + t + '%');
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
+/* ---------- الشريط العلوي ---------- */
+let barShown = 0;
+function updateBar() {
+  const s = store.stats();
+  const pct = s.products ? Math.min(100, Math.round(s.items / s.products * 100)) : 0;
+  $('barSub').textContent = `من ${nf.format(s.products)} صنف`;
+  $('barPct').textContent = pct + '%';
+  $('barRing').style.strokeDashoffset = String(113.1 * (1 - pct / 100));
+  const from = barShown, to = s.items, t0 = performance.now();
+  barShown = to;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / 600), e = 1 - Math.pow(1 - k, 3);
+    $('barNum').textContent = nf.format(Math.round(from + (to - from) * e));
+    if (k < 1) requestAnimationFrame(step);
+  };
+  if (from !== to) { $('barNum').classList.remove('pulse'); void $('barNum').offsetWidth; $('barNum').classList.add('pulse'); requestAnimationFrame(step); }
+  else $('barNum').textContent = nf.format(to);
+}
+
 /* ---------- نافذة التأكيد ---------- */
-function askConfirm(msg, yes) {
+function askConfirm(msg, yes, alt) {
   return new Promise(res => {
-    $('cfMsg').textContent = msg; $('cfYes').textContent = yes || 'تأكيد';
+    $('cfMsg').textContent = msg;
+    $('cfYes').innerHTML = '<svg class="ic"><use href="#i-check"/></svg>' + (yes || 'تأكيد');
+    $('cfAlt').hidden = !alt; $('cfAlt').textContent = alt || '';
     $('confirm').hidden = false;
-    const done = v => { $('confirm').hidden = true; $('cfYes').onclick = $('cfNo').onclick = null; res(v); };
-    $('cfYes').onclick = () => done(true); $('cfNo').onclick = () => done(false);
+    const done = v => { $('confirm').hidden = true; $('cfYes').onclick = $('cfNo').onclick = $('cfAlt').onclick = null; res(v); };
+    $('cfYes').onclick = () => done(true); $('cfNo').onclick = () => done(false); $('cfAlt').onclick = () => done('alt');
   });
 }
 
@@ -88,7 +109,7 @@ async function boot() {
   applyFont(store.getMeta('fontSize', 19));
   FX.on = store.getMeta('sound', true) !== false;
   refreshHeader();
-  showTab('count');
+  showTab('count'); updateBar(); renderFav();
   await new Promise(r => setTimeout(r, Math.max(0, 4000 - (Date.now() - t0))));
   $('loading').classList.add('out');
   setTimeout(() => { $('loading').hidden = true; }, 450);
@@ -123,7 +144,21 @@ $('nameSave').addEventListener('click', async () => {
 function hideAll() {
   $('results').hidden = true; $('product').hidden = true; $('notfound').hidden = true;
   current = null;
+  renderFav();
 }
+function renderFav() {
+  const top = store.topCounted(6);
+  $('favChips').innerHTML = top.map(t => `<button type="button" data-id="${t.id}">${esc(t.name)}<small>${nf.format(t.times)}×</small></button>`).join('');
+  favVis(top.length > 0);
+}
+function favVis(has) {
+  if (has === undefined) has = $('favChips').children.length > 0;
+  $('fav').hidden = !has || !$('results').hidden || !$('product').hidden || !$('notfound').hidden;
+}
+$('favChips').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  const p = store.getProduct(+b.dataset.id); if (p) selectProduct(p);
+});
 
 async function doLookup(text, scanned) {
   text = text.trim();
@@ -153,7 +188,7 @@ function renderResults(items, total) {
        <span class="cnt">${p.counted ? nf.format(p.counted) : ''}</span>
      </button>`).join('');
   box._items = items;
-  box.hidden = false;
+  box.hidden = false; favVis();
 }
 $('results').addEventListener('click', ev => {
   const b = ev.target.closest('.result');
@@ -174,7 +209,9 @@ function selectProduct(p) {
   renderProductInfo();
   fillEdit();
   $('qty').value = '';
-  $('product').hidden = false;
+  $('product').hidden = false; favVis();
+  $('prevNote').hidden = !(p.counted > 0);
+  $('prevNote').textContent = p.counted > 0 ? `معدود سابقاً: ${nf.format(p.counted)} ${p.unit}` : '';
   $('qty').focus();
 }
 
@@ -217,7 +254,7 @@ function showNotFound(text) {
   $('nfBarcode').value = looksCode ? text : '';
   $('nfName').value = looksCode ? '' : text;
   $('nfUnit').value = 'حبة';
-  $('notfound').hidden = false;
+  $('notfound').hidden = false; favVis();
   $('nfName').focus();
 }
 
@@ -257,14 +294,30 @@ async function addCurrent() {
   adding = true;
   $('addBtn').disabled = true;
   try {
+    const cp = current;
+    // كمية غير معقولة
+    const sys = cp.system;
+    if (qty >= 1000 || (sys !== null && sys >= 0 && qty > sys * 3 + 20)) {
+      const why = qty >= 1000 ? 'تبدو كبيرة جداً' : `أكبر بكثير من الكمية الدفترية (${nf.format(sys)})`;
+      if (!(await askConfirm(`الكمية ${nf.format(qty)} ${cp.unit} ${why}.\nهل هي صحيحة؟`, 'نعم، صحيحة'))) { adding = false; $('addBtn').disabled = false; $('qty').focus(); $('qty').select(); return; }
+    }
+    // صنف معدود سابقاً
+    let replace = false;
+    if (cp.counted > 0) {
+      const ch = await askConfirm(`هذا الصنف معدود سابقاً: ${nf.format(cp.counted)} ${cp.unit}.\nالكمية الجديدة: ${nf.format(qty)}`, `إضافة (المجموع ${nf.format(Math.round((cp.counted + qty) * 1000) / 1000)})`, 'استبدال بالكمية الجديدة');
+      if (ch === false) { adding = false; $('addBtn').disabled = false; return; }
+      replace = ch === 'alt';
+    }
     await saveEdit();
     const p = current;
-    const r = await store.addCount(p.id, qty, counter());
-    toast(`تمت إضافة ${nf.format(qty)} — المجموع ${nf.format(r.counted)} ${p.unit}`, 'ok');
+    let r;
+    if (replace) { r = { counted: await store.setOwnCount(p.id, qty, counter()) }; }
+    else r = await store.addCount(p.id, qty, counter());
+    toast(`${replace ? 'تم استبدال الكمية' : 'تمت إضافة ' + nf.format(qty)} — المجموع ${nf.format(r.counted)} ${p.unit}`, 'ok');
     hideAll();
     $('q').value = '';
     $('q').focus();
-    loadRecent();
+    loadRecent(); renderFav(); updateBar();
   } catch (e) { toast(e.message, 'err'); }
   finally { adding = false; $('addBtn').disabled = false; }
 }
@@ -284,6 +337,7 @@ const recentRow = r => `<li><div class="grow">${esc(r.name)}<small>${hhmm(r.ts)}
        <div class="q">${nf.format(r.qty)} ${esc(r.unit)}</div>
        <button class="x" data-id="${r.id}" data-name="${esc(r.name)}" data-q="${nf.format(r.qty)} ${esc(r.unit)}" aria-label="إلغاء"><svg class="ic"><use href="#i-x"/></svg></button></li>`;
 function loadRecent() {
+  updateBar();
   const items = store.recent(30);
   $('recentEmpty').hidden = items.length > 0;
   $('recent').innerHTML = items.slice(0, 2).map(recentRow).join('');

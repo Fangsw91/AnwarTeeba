@@ -277,7 +277,7 @@
     const counted = id => S.totals.get(id) || 0;
     const view = p => ({
       id: p.id, barcode: p.barcode || null, name: p.name, unit: p.unit, counted: counted(p.id),
-      cost: p.cost, tax: p.tax == null ? null : p.tax, priceBase: r6(money(p).base), priceGross: r6(money(p).gross),
+      cost: p.cost, system: p.system == null ? null : p.system, tax: p.tax == null ? null : p.tax, priceBase: r6(money(p).base), priceGross: r6(money(p).gross),
     });
 
     /** كل الأصناف المطابقة (الأقرب أولاً): الاسم يبدأ بالكلمة قبل اللي بيحتويها بالنص */
@@ -392,6 +392,19 @@
       const total = r3(counted(productId) - oldQty + qty);
       if (total > 0) S.totals.set(productId, total); else S.totals.delete(productId);
       return total;
+    }
+
+    /** الأصناف الأكثر عدّاً على هذا الجهاز (حسب عدد مرّات التسجيل) */
+    function topCounted(n) {
+      const m = new Map();
+      for (const c of S.counts) {
+        if (isMerged(c)) continue;
+        const e = m.get(c.productId) || { n: 0, ts: 0 };
+        e.n++; e.ts = Math.max(e.ts, c.ts); m.set(c.productId, e);
+      }
+      return [...m.entries()].filter(([id]) => S.products.has(id))
+        .sort((a, b) => b[1].n - a[1].n || b[1].ts - a[1].ts).slice(0, n || 6)
+        .map(([id, e]) => ({ id, name: S.products.get(id).name, times: e.n }));
     }
 
     function recent(limit) {
@@ -674,7 +687,7 @@
     return {
       init, getMeta, setMeta, importProducts, addProduct, lookup, lookupAll, addCount, undoCount, recent,
       getProduct: id => { const x = S.products.get(id); return x ? view(x) : null; },
-      updateProduct, ownCount, setOwnCount, bulkSetTax, countMatching, taxReport, exportTaxCsv, reportPack, TAX_RATES,
+      updateProduct, topCounted, ownCount, setOwnCount, bulkSetTax, countMatching, taxReport, exportTaxCsv, reportPack, TAX_RATES,
       stats, report, exportCsv, mergeCsv, resetCounts, wipeAll,
       get productCount() { return S.products.size; },
     };

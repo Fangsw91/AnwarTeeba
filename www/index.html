@@ -35,6 +35,7 @@
 <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6"/></symbol>
 <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></symbol>
 <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol>
 <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/></symbol>
 </defs></svg>
 <div id="loading">
@@ -43,7 +44,19 @@
   <div class="ld-text" id="ldText">جارٍ تحميل الأصناف…</div>
 </div>
 
-<div class="bar"></div>
+<div class="bar">
+  <span class="orb o1"></span><span class="orb o2"></span>
+  <div class="bar-in">
+    <div class="bar-main">
+      <div class="bar-num"><b id="barNum">0</b><span>صنف معدود</span></div>
+      <div class="bar-sub" id="barSub">من 0 صنف</div>
+    </div>
+    <div class="ring">
+      <svg viewBox="0 0 44 44"><circle class="rg-bg" cx="22" cy="22" r="18"/><circle class="rg-fg" id="barRing" cx="22" cy="22" r="18"/></svg>
+      <em id="barPct">0%</em>
+    </div>
+  </div>
+</div>
 
 <main>
 
@@ -66,11 +79,17 @@
       </div>
     </form>
 
+    <section id="fav" class="card favcard" hidden>
+      <div class="rc-head"><svg class="ic"><use href="#i-star"/></svg><h3>الأكثر عدّاً</h3></div>
+      <div class="favchips" id="favChips"></div>
+    </section>
+
     <section id="results" class="results" hidden></section>
 
     <section id="product" class="card" hidden>
       <div class="prod-name" id="pName"></div>
       <div class="muted" id="pMeta"></div>
+      <div class="prevnote" id="prevNote" hidden></div>
       <div class="priceline"><span id="pPrice"></span></div>
       <div class="quickedit">
         <label class="field"><span id="edPriceLbl">سعر الشراء للوحدة</span>
@@ -334,7 +353,7 @@
 <div id="confirm" hidden>
   <div class="cf-box">
     <div class="cf-msg" id="cfMsg"></div>
-    <div class="cf-btns"><button type="button" class="btn danger" id="cfYes"><svg class="ic"><use href="#i-check"/></svg>تأكيد</button><button type="button" class="btn ghost" id="cfNo"><svg class="ic"><use href="#i-x"/></svg>تراجع</button></div>
+    <div class="cf-btns"><button type="button" class="btn danger" id="cfYes"><svg class="ic"><use href="#i-check"/></svg>تأكيد</button><button type="button" class="btn" id="cfAlt" hidden></button><button type="button" class="btn ghost" id="cfNo"><svg class="ic"><use href="#i-x"/></svg>تراجع</button></div>
   </div>
 </div>
 

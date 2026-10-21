@@ -307,3 +307,37 @@ main > section:not([hidden]) { animation: pageIn .32s ease both; }
 .rc-toggle .chev { transition: transform .25s ease; }
 .rc-toggle.open .chev { transform: rotate(180deg); }
 #recentMore:not([hidden]) { animation: pageIn .3s ease both; }
+
+/* ---------- الشريط العلوي العصري ---------- */
+.bar { height: auto !important; padding: 0 !important; padding-top: env(safe-area-inset-top) !important; border-bottom: 0 !important; overflow: hidden; position: sticky; top: 0; z-index: 10;
+  background: linear-gradient(135deg, #1b1744 0%, #28235d 45%, #3b2f94 100%); color: #fff; border-radius: 0 0 28px 28px; box-shadow: 0 10px 28px rgba(27,23,68,.35); }
+.bar::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: linear-gradient(90deg, var(--accent), #ff6a70, var(--accent)); background-size: 200% 100%; animation: slide 4s linear infinite; }
+@keyframes slide { to { background-position: -200% 0; } }
+.bar .orb { position: absolute; border-radius: 50%; filter: blur(18px); opacity: .5; pointer-events: none; }
+.bar .o1 { width: 130px; height: 130px; background: #e01f26; top: -50px; right: -30px; animation: float1 7s ease-in-out infinite; }
+.bar .o2 { width: 110px; height: 110px; background: #6a5de0; bottom: -50px; left: 20%; animation: float2 9s ease-in-out infinite; }
+@keyframes float1 { 50% { transform: translate(-40px, 18px) scale(1.2); } }
+@keyframes float2 { 50% { transform: translate(50px, -12px) scale(1.25); } }
+.bar-in { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 20px 20px; }
+.bar-num { display: flex; align-items: baseline; gap: 8px; }
+.bar-num b { font-size: 2.4rem; font-weight: 800; line-height: 1; direction: ltr; text-shadow: 0 2px 10px rgba(0,0,0,.3); }
+.bar-num b.pulse { animation: numPulse .6s ease; }
+@keyframes numPulse { 30% { transform: scale(1.18); color: #ffd2d4; } }
+.bar-num span { font-size: 1.05rem; font-weight: 700; opacity: .95; }
+.bar-sub { font-size: .85rem; opacity: .8; margin-top: 4px; }
+.ring { position: relative; width: 64px; height: 64px; flex: none; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 4.5; }
+.rg-bg { stroke: rgba(255,255,255,.2); }
+.rg-fg { stroke: #fff; stroke-linecap: round; stroke-dasharray: 113.1; stroke-dashoffset: 113.1; transition: stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1); }
+.ring em { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: .8rem; font-weight: 800; direction: ltr; }
+
+/* الأكثر عدّاً + ملاحظة العدّ السابق */
+.favcard .rc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--muted); }
+.favcard .rc-head h3 { margin: 0; }
+.favchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.favchips button { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--line); background: #fff; border-radius: 99px; padding: 8px 14px; font: inherit; font-size: .9rem; font-weight: 700; color: var(--brand); cursor: pointer; max-width: 100%; transition: transform .12s, background .2s; animation: popIn .3s ease both; }
+.favchips button:active { transform: scale(.95); background: var(--brand-soft); }
+.favchips small { color: var(--muted); font-weight: 600; direction: ltr; }
+.prevnote { display: inline-block; margin: 6px 0; padding: 4px 12px; border-radius: 99px; background: #fdf1e0; color: #8a5a0a; font-size: .85rem; font-weight: 700; animation: popIn .3s ease both; }
+#confirm .cf-btns .btn[hidden] { display: none; }
