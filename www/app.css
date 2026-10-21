@@ -358,3 +358,5 @@ html:has(.bar.mini) { scroll-padding-top: 4rem; }
   0%, 100% { box-shadow: 0 0 0 0 rgba(224,31,38,.55), 0 4px 14px rgba(224,31,38,.35); transform: scale(1); }
   50% { box-shadow: 0 0 0 10px rgba(224,31,38,0), 0 6px 22px rgba(224,31,38,.6); transform: scale(1.025); filter: brightness(1.12); }
 }
+
+.unitchips button { min-width: 70px; }

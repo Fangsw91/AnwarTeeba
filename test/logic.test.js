@@ -376,5 +376,17 @@ async function t(name, fn) {
     assert.equal(X.lookupAll('٢٠٢٠').items[0].name, 'شاي');                    // أرقام عربية
   });
 
+  await t('تعديل الوحدة يُحفظ ولا تمسحه إعادة الاستيراد', async () => {
+    const X = Inv.createStore(); await X.init('dev-unit');
+    const rows = [['رقم المادة', 'اسم المادة', 'اخر سعر شراء', 'الوحدة'], ['9001', 'لوز', 12, 'حبة']];
+    await X.importProducts(rows);
+    const id = X.lookup('9001')[0].id;
+    const v = await X.updateProduct(id, { unit: 'كيلو' });
+    assert.equal(v.unit, 'كيلو');
+    await X.importProducts(rows);
+    assert.equal(X.lookup('9001')[0].unit, 'كيلو');
+    await assert.rejects(() => X.updateProduct(id, { unit: '  ' }), /الوحدة/);
+  });
+
   console.log(`\n${passed} اختبار نجح${process.exitCode ? ' — وفي اختبارات فشلت' : ''}`);
 })();

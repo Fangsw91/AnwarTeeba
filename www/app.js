@@ -218,11 +218,20 @@ function selectProduct(p) {
   $('qty').focus();
 }
 
+const UNITS = ['حبة', 'كيلو', 'غرام'];
+function renderUnits(box, cur) {
+  const list = UNITS.includes(cur) ? UNITS : [cur, ...UNITS];
+  box.innerHTML = list.map(u => `<button type="button" data-u="${esc(u)}" class="${u === cur ? 'on' : ''}">${esc(u)}</button>`).join('');
+}
+const unitOf = box => { const b = box.querySelector('button.on'); return b ? b.dataset.u : null; };
+function pickUnit(box, ev) { const b = ev.target.closest('button'); if (!b) return false; box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); return true; }
 const TAX_CHIPS = [['0', '0%'], ['1', '1%'], ['2', '2%'], ['4', '4%'], ['5', '5%'], ['10', '10%'], ['16', '16%']];
 $('edChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v="${v}">${t}</button>`).join('');
 function markChips() { document.querySelectorAll('#edChips button').forEach(b => b.classList.toggle('on', b.dataset.v === $('edTax').value)); }
 $('edChips').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; $('edTax').value = b.dataset.v; markChips(); saveEdit(); });
+$('edUnits').addEventListener('click', ev => { if (pickUnit($('edUnits'), ev)) { $('qty').placeholder = 'الكمية (' + unitOf($('edUnits')) + ')'; saveEdit(); } });
 function fillEdit() {
+  renderUnits($('edUnits'), current.unit); $('qty').placeholder = 'الكمية (' + current.unit + ')';
   $('edPriceLbl').textContent = 'سعر الشراء للوحدة (شامل الضريبة)';
   $('edPrice').value = current.cost;
   $('edTax').innerHTML = '<option value=""></option>' + TAX_CHIPS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
@@ -236,11 +245,12 @@ function saveEdit() {
   const price = $('edPrice').value.trim();
   const taxV = $('edTax').value === '' ? null : Number($('edTax').value);
   const cost = price === '' || isNaN(parseFloat(price)) ? current.cost : parseFloat(price);
-  if (cost === current.cost && taxV === current.tax) return savingEdit;
+  const unitV = unitOf($('edUnits')) || current.unit;
+  if (cost === current.cost && taxV === current.tax && unitV === current.unit) return savingEdit;
   const id = current.id;
   savingEdit = savingEdit.then(async () => {
     try {
-      const v = await store.updateProduct(id, { cost, tax: taxV });
+      const v = await store.updateProduct(id, { cost, tax: taxV, unit: unitV });
       if (current && current.id === id) { current = v; renderProductInfo(); }
       $('savedMark').textContent = 'تم حفظ السعر والضريبة ✓';
       FX.tab();
@@ -748,6 +758,7 @@ $('repBtn').addEventListener('click', async () => {
 let ceCur = null;
 $('ceChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v="${v}">${t}</button>`).join('');
 let ceTax = null;
+$('ceUnits').addEventListener('click', ev => pickUnit($('ceUnits'), ev));
 function markCe() { document.querySelectorAll('#ceChips button').forEach(b => b.classList.toggle('on', ceTax !== null && b.dataset.v === String(ceTax))); }
 $('ceChips').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; ceTax = Number(b.dataset.v); markCe(); });
 function loadCe() {
@@ -767,7 +778,7 @@ $('ceList').addEventListener('click', ev => {
   $('ceQty').value = store.ownCount(p.id);
   $('cePriceLbl').textContent = 'سعر الشراء للوحدة (شامل الضريبة)';
   $('cePrice').value = p.cost;
-  ceTax = p.tax; markCe();
+  ceTax = p.tax; markCe(); renderUnits($('ceUnits'), p.unit);
   $('cePanel').hidden = false;
   $('cePanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
@@ -784,7 +795,7 @@ $('ceSave').addEventListener('click', async () => {
   if (isNaN(qty) || qty < 0) { toast('أدخل الكمية', 'err'); $('ceQty').focus(); return; }
   const price = parseFloat($('cePrice').value);
   try {
-    await store.updateProduct(ceCur.id, { cost: isNaN(price) ? ceCur.cost : price, tax: ceTax });
+    await store.updateProduct(ceCur.id, { cost: isNaN(price) ? ceCur.cost : price, tax: ceTax, unit: unitOf($('ceUnits')) || ceCur.unit });
     await store.setOwnCount(ceCur.id, qty, counter());
     toast('تم حفظ التعديل', 'ok');
     $('cePanel').hidden = true; ceCur = null;

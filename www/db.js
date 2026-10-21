@@ -123,7 +123,7 @@
         fn(t);
       });
     }
-    const plain = p => ({ id: p.id, barcode: p.barcode, name: p.name, unit: p.unit, system: p.system, cost: p.cost, source: p.source, tax: p.tax == null ? null : p.tax, pm: !!p.pm, tm: !!p.tm });
+    const plain = p => ({ id: p.id, barcode: p.barcode, name: p.name, unit: p.unit, system: p.system, cost: p.cost, source: p.source, tax: p.tax == null ? null : p.tax, pm: !!p.pm, tm: !!p.tm, um: !!p.um });
 
     function indexProduct(p) {
       p._n = norm(p.name);
@@ -218,7 +218,7 @@
         const ex = findExisting(barcode, it.name);
         if (ex) {
           ex.name = it.name; ex._n = norm(ex.name);
-          if (it.unit !== undefined) ex.unit = it.unit;
+          if (it.unit !== undefined && !ex.um) ex.unit = it.unit;
           if (it.system !== undefined) ex.system = it.system;
           if (it.cost !== undefined && !ex.pm) ex.cost = it.cost;          // السعر المعدّل يدوياً ما بينمسح
           if (it.tax !== undefined && !ex.tm) ex.tax = it.tax;
@@ -312,10 +312,10 @@
       return { base, tax: base * t, gross: base * (1 + t) };
     }
 
-    async function updateProduct(id, { cost, tax }) {
+    async function updateProduct(id, { cost, tax, unit }) {
       const p = S.products.get(id);
       if (!p) throw new Error('الصنف غير موجود');
-      const next = { cost: p.cost, tax: p.tax == null ? null : p.tax, pm: p.pm, tm: p.tm };
+      const next = { cost: p.cost, tax: p.tax == null ? null : p.tax, pm: p.pm, tm: p.tm, unit: p.unit, um: p.um };
       if (cost !== undefined) {
         const c = Number(cost);
         if (!isFinite(c) || c < 0 || c > 1e7) throw new Error('السعر غير صحيح');
@@ -325,7 +325,12 @@
         if (tax !== null && !TAX_RATES.includes(Number(tax))) throw new Error('نسبة الضريبة غير مدعومة');
         next.tax = tax === null ? null : Number(tax); next.tm = true;
       }
-      const old = { cost: p.cost, tax: p.tax, pm: p.pm, tm: p.tm };
+      if (unit !== undefined) {
+        const u = String(unit || '').trim().slice(0, 20);
+        if (!u) throw new Error('الوحدة غير صحيحة');
+        if (u !== p.unit) { next.unit = u; next.um = true; }
+      }
+      const old = { cost: p.cost, tax: p.tax, pm: p.pm, tm: p.tm, unit: p.unit, um: p.um };
       Object.assign(p, next);
       try { await write('products', t => t.objectStore('products').put(plain(p))); }
       catch (e) { Object.assign(p, old); throw e; }
