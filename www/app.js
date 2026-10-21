@@ -122,6 +122,7 @@ function refreshHeader() {
 
 /* ---------- التبويبات ---------- */
 function showTab(tab) {
+  document.querySelector('.bar').classList.toggle('mini', tab !== 'count');
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   ['count', 'report', 'products', 'settings'].forEach(t => { $('tab-' + t).hidden = t !== tab; });
   if (tab !== 'count') stopScanner();

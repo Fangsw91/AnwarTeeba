@@ -342,3 +342,12 @@ main > section:not([hidden]) { animation: pageIn .32s ease both; }
 .prevnote { display: inline-block; margin: 6px 0; padding: 4px 12px; border-radius: 99px; background: #fdf1e0; color: #8a5a0a; font-size: .85rem; font-weight: 700; animation: popIn .3s ease both; }
 #confirm .cf-btns .btn[hidden] { display: none; }
 html { scroll-padding-top: 8rem; scroll-padding-bottom: 6rem; }
+
+/* شريط مصغّر سادة لباقي الصفحات */
+.bar { transition: border-radius .3s ease, box-shadow .3s ease; }
+.bar-in { max-height: 200px; transition: max-height .35s ease, opacity .25s ease, padding .35s ease; }
+.bar.mini { background: var(--brand) !important; border-radius: 0 !important; box-shadow: none !important; border-bottom: 3px solid var(--accent) !important; }
+.bar.mini .bar-in { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
+.bar.mini::after, .bar.mini .orb { display: none; }
+.bar.mini { min-height: calc(14px + env(safe-area-inset-top)); }
+html:has(.bar.mini) { scroll-padding-top: 4rem; }
