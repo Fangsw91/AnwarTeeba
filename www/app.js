@@ -9,6 +9,16 @@ const inc = () => store.getMeta('taxView', 'excl') === 'incl';
 const taxTxt = t => (t === null || t === undefined ? 'ضريبة غير محددة' : 'ضريبة ' + t + '%');
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
+/* ---------- نافذة التأكيد ---------- */
+function askConfirm(msg, yes) {
+  return new Promise(res => {
+    $('cfMsg').textContent = msg; $('cfYes').textContent = yes || 'تأكيد';
+    $('confirm').hidden = false;
+    const done = v => { $('confirm').hidden = true; $('cfYes').onclick = $('cfNo').onclick = null; res(v); };
+    $('cfYes').onclick = () => done(true); $('cfNo').onclick = () => done(false);
+  });
+}
+
 /* ---------- الأصوات والمؤثرات ---------- */
 const FX = {
   on: true, ctx: null,
@@ -169,14 +179,14 @@ function selectProduct(p) {
   $('qty').focus();
 }
 
-const TAX_CHIPS = [['', 'غير محدد'], ['0', '0%'], ['1', '1%'], ['2', '2%'], ['4', '4%'], ['5', '5%'], ['10', '10%'], ['16', '16%']];
+const TAX_CHIPS = [['0', '0%'], ['1', '1%'], ['2', '2%'], ['4', '4%'], ['5', '5%'], ['10', '10%'], ['16', '16%']];
 $('edChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v="${v}">${t}</button>`).join('');
 function markChips() { document.querySelectorAll('#edChips button').forEach(b => b.classList.toggle('on', b.dataset.v === $('edTax').value)); }
 $('edChips').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; $('edTax').value = b.dataset.v; markChips(); saveEdit(); });
 function fillEdit() {
   $('edPriceLbl').textContent = 'سعر الشراء للوحدة (' + (store.getMeta('priceIncludesTax', false) ? 'شامل الضريبة' : 'قبل الضريبة') + ')';
   $('edPrice').value = current.cost;
-  $('edTax').innerHTML = TAX_CHIPS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  $('edTax').innerHTML = '<option value=""></option>' + TAX_CHIPS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
   $('edTax').value = current.tax === null ? '' : String(current.tax);
   $('savedMark').textContent = '';
   markChips();
@@ -238,6 +248,12 @@ let adding = false;
 async function addCurrent() {
   if (!current || adding) return;
   const qty = qtyVal();
+  if ($('edTax').value === '' && current.tax === null) {
+    toast('اختر نسبة الضريبة للصنف قبل الإضافة للجرد', 'err');
+    const c = $('edChips'); c.classList.remove('need'); void c.offsetWidth; c.classList.add('need');
+    c.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    return;
+  }
   if (qty <= 0) { toast('أدخل الكمية', 'err'); $('qty').focus(); return; }
   adding = true;
   $('addBtn').disabled = true;
@@ -271,11 +287,12 @@ function loadRecent() {
   $('recent').innerHTML = items.map(r =>
     `<li><div class="grow">${esc(r.name)}<small>${hhmm(r.ts)}</small></div>
        <div class="q">${nf.format(r.qty)} ${esc(r.unit)}</div>
-       <button class="x" data-id="${r.id}" aria-label="إلغاء">✕</button></li>`).join('');
+       <button class="x" data-id="${r.id}" data-name="${esc(r.name)}" data-q="${nf.format(r.qty)} ${esc(r.unit)}" aria-label="إلغاء">✕</button></li>`).join('');
 }
 $('recent').addEventListener('click', async ev => {
   const b = ev.target.closest('.x');
-  if (!b || !confirm('إلغاء هذا السطر؟')) return;
+  if (!b) return;
+  if (!(await askConfirm(`إلغاء هذا العدّ؟\n${b.dataset.name} — ${b.dataset.q}`, 'نعم، إلغاء'))) return;
   try { await store.undoCount(+b.dataset.id); toast('تم الإلغاء'); loadRecent(); }
   catch (e) { toast(e.message, 'err'); }
 });
@@ -585,7 +602,7 @@ $('bulkBtn').addEventListener('click', async () => {
   const q = $('bulkQ').value.trim();
   const n = store.countMatching(q);
   const rate = Number($('bulkTax').value);
-  if (!n || !confirm(`تحديد ضريبة ${rate}% لـ ${nf.format(n)} صنف${q ? ' (مطابقة لـ «' + q + '»)' : ' (كل الأصناف)'}؟`)) return;
+  if (!n || !(await askConfirm(`تحديد ضريبة ${rate}% لـ ${nf.format(n)} صنف${q ? ' (مطابقة لـ «' + q + '»)' : ' (كل الأصناف)'}؟`, 'تطبيق'))) return;
   try {
     const c = await store.bulkSetTax(q, rate);
     $('bulkRes').textContent = `تم تحديد ${rate}% لـ ${nf.format(c)} صنف.`;
@@ -673,14 +690,14 @@ $('setSave').addEventListener('click', async () => {
   } catch (e) { toast(e.message, 'err'); }
 });
 $('resetBtn').addEventListener('click', async () => {
-  if (!confirm('سيتم مسح كل الكميات المعدودة على هذا الجهاز (الأصناف تبقى). هل صدّرت نسخة؟')) return;
-  if (!confirm('هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+  if (!(await askConfirm('سيتم مسح كل الكميات المعدودة على هذا الجهاز (الأصناف تبقى). هل صدّرت نسخة؟', 'متابعة'))) return;
+  if (!(await askConfirm('هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء.', 'نعم، امسح'))) return;
   try { await store.resetCounts(); toast('بدأ جرد جديد', 'ok'); showTab('count'); }
   catch (e) { toast(e.message, 'err'); }
 });
 $('wipeBtn').addEventListener('click', async () => {
-  if (!confirm('سيتم مسح كل الأصناف وكل العدّ من هذا الجهاز. متابعة؟')) return;
-  if (!confirm('هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+  if (!(await askConfirm('سيتم مسح كل الأصناف وكل العدّ من هذا الجهاز. متابعة؟', 'متابعة'))) return;
+  if (!(await askConfirm('هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء.', 'نعم، امسح'))) return;
   try { await store.wipeAll(); toast('تم المسح', 'ok'); showTab('count'); }
   catch (e) { toast(e.message, 'err'); }
 });

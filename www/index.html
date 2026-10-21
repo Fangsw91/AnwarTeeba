@@ -139,7 +139,6 @@
         <select id="repRate">
           <option value="all">كل الفئات</option>
           <option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option>
-          <option value="none">غير محدد</option>
         </select>
       </label>
       <div class="seg" id="repFmt">
@@ -264,6 +263,13 @@
   <div class="frame"></div>
   <button class="btn ghost" id="torchBtn" hidden>المصباح</button>
   <button class="btn" id="scanClose">إغلاق</button>
+</div>
+
+<div id="confirm" hidden>
+  <div class="cf-box">
+    <div class="cf-msg" id="cfMsg"></div>
+    <div class="cf-btns"><button type="button" class="btn danger" id="cfYes">تأكيد</button><button type="button" class="btn ghost" id="cfNo">تراجع</button></div>
+  </div>
 </div>
 
 <div id="toast"></div>
