@@ -34,6 +34,7 @@
 <symbol id="i-type" viewBox="0 0 24 24"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></symbol>
 <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6"/></symbol>
 <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></symbol>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
 <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/></symbol>
 </defs></svg>
 <div id="loading">
@@ -224,6 +225,28 @@
 
   <!-- ===== الأصناف ===== -->
   <section id="tab-products" class="grid" hidden>
+    <div class="card stack" id="ceCard">
+      <h3 class="h-ic"><svg class="ic"><use href="#i-pencil"/></svg>تعديل الأصناف المجرودة</h3>
+      <input id="ceQ" placeholder="بحث بالاسم أو الباركود في الأصناف المجرودة">
+      <div class="note" id="ceCount"></div>
+      <div id="ceList" class="celist"></div>
+      <div id="cePanel" class="quickedit" hidden>
+        <div class="prod-name" id="ceName"></div>
+        <div class="muted" id="ceMeta"></div>
+        <label class="field">الكمية المعدودة على هذا الجهاز
+          <input id="ceQty" type="number" inputmode="decimal" step="any" min="0">
+        </label>
+        <label class="field"><span id="cePriceLbl">سعر الشراء للوحدة</span>
+          <input id="cePrice" type="number" inputmode="decimal" step="any" min="0">
+        </label>
+        <div class="field">نسبة الضريبة
+          <div class="taxchips" id="ceChips"></div>
+        </div>
+        <button type="button" class="btn block" id="ceSave"><svg class="ic"><use href="#i-check"/></svg>حفظ التعديل</button>
+        <button type="button" class="btn ghost block" id="ceClose"><svg class="ic"><use href="#i-x"/></svg>إغلاق</button>
+      </div>
+    </div>
+
     <div class="card stack">
       <h3 class="h-ic"><svg class="ic"><use href="#i-upload"/></svg>استيراد الأصناف من ملف</h3>
 <label class="filebtn"><input type="file" id="file" accept=".xls,.xlsx,.csv,.txt,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><span class="btn ghost">اختيار ملف</span></label>

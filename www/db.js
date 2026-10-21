@@ -370,6 +370,30 @@
       if (left > 0) S.totals.set(c.productId, left); else S.totals.delete(c.productId);
     }
 
+    const isMerged = c => String(c.counter).startsWith('دمج:');
+    /** كمية العدّ على هذا الجهاز فقط (بدون ما دُمج من أجهزة أخرى) */
+    function ownCount(productId) {
+      return r3(S.counts.filter(c => c.productId === productId && !isMerged(c)).reduce((a, c) => a + c.qty, 0));
+    }
+    /** يضبط كمية هذا الجهاز لصنف: يستبدل أسطره بسطر واحد (أو يحذفها إذا الكمية صفر) */
+    async function setOwnCount(productId, qty, counter) {
+      if (!S.products.has(productId)) throw new Error('الصنف غير موجود');
+      qty = r3(Number(qty));
+      if (!isFinite(qty) || qty < 0) throw new Error('الكمية غير صحيحة');
+      const old = S.counts.filter(c => c.productId === productId && !isMerged(c));
+      const row = qty > 0 ? { id: S.nextCountId, productId, qty, counter: counter || 'تعديل', ts: Date.now() } : null;
+      await write('counts', t => {
+        old.forEach(c => t.objectStore('counts').delete(c.id));
+        if (row) t.objectStore('counts').put(row);
+      });
+      const oldQty = r3(old.reduce((a, c) => a + c.qty, 0));
+      S.counts = S.counts.filter(c => !old.includes(c));
+      if (row) { S.counts.push(row); S.nextCountId++; }
+      const total = r3(counted(productId) - oldQty + qty);
+      if (total > 0) S.totals.set(productId, total); else S.totals.delete(productId);
+      return total;
+    }
+
     function recent(limit) {
       const out = [];
       for (let i = S.counts.length - 1; i >= 0 && out.length < (limit || 12); i--) {
@@ -650,7 +674,7 @@
     return {
       init, getMeta, setMeta, importProducts, addProduct, lookup, lookupAll, addCount, undoCount, recent,
       getProduct: id => { const x = S.products.get(id); return x ? view(x) : null; },
-      updateProduct, bulkSetTax, countMatching, taxReport, exportTaxCsv, reportPack, TAX_RATES,
+      updateProduct, ownCount, setOwnCount, bulkSetTax, countMatching, taxReport, exportTaxCsv, reportPack, TAX_RATES,
       stats, report, exportCsv, mergeCsv, resetCounts, wipeAll,
       get productCount() { return S.products.size; },
     };

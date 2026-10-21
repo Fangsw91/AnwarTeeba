@@ -106,7 +106,7 @@ function showTab(tab) {
   if (tab !== 'count') stopScanner();
   if (tab === 'count') { refreshHeader(); loadRecent(); }
   if (tab === 'report') { renderStats(); renderTaxTable(); loadReport(false); loadRecent(); }
-  if (tab === 'products') { $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
+  if (tab === 'products') { $('cePanel').hidden = true; loadCe(); $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
   if (tab === 'settings') { $('setIncl').value = store.getMeta('priceIncludesTax', false) ? 'incl' : 'excl'; $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); }
 }
 $('nav').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) showTab(b.dataset.tab); });
@@ -676,6 +676,54 @@ $('repBtn').addEventListener('click', async () => {
     note.textContent = '';
     if (!/cancel/i.test(String(e && e.message))) toast('تعذّر إصدار التقرير: ' + (e.message || e), 'err');
   } finally { btn.disabled = false; }
+});
+
+/* ---------- تعديل الأصناف المجرودة ---------- */
+let ceCur = null;
+$('ceChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v="${v}">${t}</button>`).join('');
+let ceTax = null;
+function markCe() { document.querySelectorAll('#ceChips button').forEach(b => b.classList.toggle('on', ceTax !== null && b.dataset.v === String(ceTax))); }
+$('ceChips').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; ceTax = Number(b.dataset.v); markCe(); });
+function loadCe() {
+  const r = store.report('counted', $('ceQ').value, 0, 30);
+  $('ceCount').textContent = nf.format(r.total) + ' صنف مجرود' + (r.hasMore ? ' (عرض أول 30)' : '');
+  $('ceList').innerHTML = r.rows.map(x =>
+    `<button type="button" class="result" data-id="${x.id}"><span>${esc(x.name)}<small>${esc(x.barcode || 'بدون باركود')} · ${esc(x.unit)} · ${x.tax === null ? 'ضريبة غير محددة' : 'ضريبة ' + x.tax + '%'}</small></span><span class="cnt">${nf.format(x.counted)}</span></button>`).join('');
+}
+$('ceQ').addEventListener('input', debounce(loadCe, 200));
+$('ceList').addEventListener('click', ev => {
+  const b = ev.target.closest('.result'); if (!b) return;
+  const p = store.getProduct(+b.dataset.id); if (!p) return;
+  ceCur = p;
+  $('ceName').textContent = p.name;
+  const merged = r3js(p.counted - store.ownCount(p.id));
+  $('ceMeta').textContent = (p.barcode || 'بدون باركود') + ' · ' + p.unit + (merged > 0 ? ' · مدموج من أجهزة أخرى: ' + nf.format(merged) : '');
+  $('ceQty').value = store.ownCount(p.id);
+  $('cePriceLbl').textContent = 'سعر الشراء للوحدة (' + (store.getMeta('priceIncludesTax', false) ? 'شامل الضريبة' : 'قبل الضريبة') + ')';
+  $('cePrice').value = p.cost;
+  ceTax = p.tax; markCe();
+  $('cePanel').hidden = false;
+  $('cePanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+const r3js = n => Math.round(n * 1000) / 1000;
+$('ceClose').addEventListener('click', () => { $('cePanel').hidden = true; ceCur = null; });
+$('ceSave').addEventListener('click', async () => {
+  if (!ceCur) return;
+  if (ceTax === null) {
+    toast('اختر نسبة الضريبة للصنف أولاً', 'err');
+    const c = $('ceChips'); c.classList.remove('need'); void c.offsetWidth; c.classList.add('need');
+    return;
+  }
+  const qty = parseFloat($('ceQty').value);
+  if (isNaN(qty) || qty < 0) { toast('أدخل الكمية', 'err'); $('ceQty').focus(); return; }
+  const price = parseFloat($('cePrice').value);
+  try {
+    await store.updateProduct(ceCur.id, { cost: isNaN(price) ? ceCur.cost : price, tax: ceTax });
+    await store.setOwnCount(ceCur.id, qty, counter());
+    toast('تم حفظ التعديل', 'ok');
+    $('cePanel').hidden = true; ceCur = null;
+    loadCe(); loadRecent();
+  } catch (e) { toast(e.message, 'err'); }
 });
 
 /* ---------- الإعدادات ---------- */

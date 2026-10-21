@@ -351,5 +351,18 @@ async function t(name, fn) {
     assert.equal(X.lookup('7001')[0].tax, 5);                                  // لا يستبدل ضريبة محددة
   });
 
+  await t('تعديل كمية صنف مجرود: يستبدل أسطر هذا الجهاز ويُبقي المدموج', async () => {
+    const X = Inv.createStore(); await X.init('dev-edit'); await X.setMeta('deviceName', 'المدير');
+    await X.importProducts([['رقم المادة', 'اسم المادة', 'اخر سعر شراء'], ['8001', 'عدس', 2]]);
+    const id = X.lookup('8001')[0].id;
+    await X.addCount(id, 5, 'المدير'); await X.addCount(id, 3, 'المدير');
+    assert.equal(X.ownCount(id), 8);
+    assert.equal(await X.setOwnCount(id, 6, 'المدير'), 6);
+    assert.equal(X.lookup('8001')[0].counted, 6); assert.equal(X.recent(10).length, 1);
+    assert.equal(await X.setOwnCount(id, 0, 'المدير'), 0);
+    assert.equal(X.lookup('8001')[0].counted, 0); assert.equal(X.stats().items, 0);
+    await assert.rejects(() => X.setOwnCount(id, -1), /الكمية/);
+  });
+
   console.log(`\n${passed} اختبار نجح${process.exitCode ? ' — وفي اختبارات فشلت' : ''}`);
 })();
