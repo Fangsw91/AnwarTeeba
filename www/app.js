@@ -163,44 +163,44 @@ function selectProduct(p) {
   hideAll();
   current = p;
   renderProductInfo();
-  $('editBox').hidden = true; $('editToggle').classList.remove('open');
-  $('qty').value = '1';
+  fillEdit();
+  $('qty').value = '';
   $('product').hidden = false;
   $('qty').focus();
-  $('qty').select();
 }
 
-const TAX_CHIPS = [['', 'غير محدد'], ['0', '0%'], ['1', '1%'], ['2', '2%'], ['5', '5%'], ['10', '10%'], ['16', '16%']];
+const TAX_CHIPS = [['', 'غير محدد'], ['0', '0%'], ['1', '1%'], ['2', '2%'], ['4', '4%'], ['5', '5%'], ['10', '10%'], ['16', '16%']];
 $('edChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v="${v}">${t}</button>`).join('');
 function markChips() { document.querySelectorAll('#edChips button').forEach(b => b.classList.toggle('on', b.dataset.v === $('edTax').value)); }
-$('edChips').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; $('edTax').value = b.dataset.v; markChips(); });
-$('editToggle').addEventListener('click', () => {
-  if (!current) return;
-  const open = $('editBox').hidden;
-  $('editBox').hidden = !open;
-  $('editToggle').classList.toggle('open', open);
-  if (open) {
-    $('edPriceLbl').textContent = 'سعر الشراء للوحدة (' + (store.getMeta('priceIncludesTax', false) ? 'شامل الضريبة' : 'قبل الضريبة') + ')';
-    $('edPrice').value = current.cost;
-    $('edTax').value = current.tax === null ? '' : String(current.tax);
-    markChips();
-    $('edPrice').focus();
-  }
-});
-$('edSave').addEventListener('click', async () => {
-  if (!current) return;
+$('edChips').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; $('edTax').value = b.dataset.v; markChips(); saveEdit(); });
+function fillEdit() {
+  $('edPriceLbl').textContent = 'سعر الشراء للوحدة (' + (store.getMeta('priceIncludesTax', false) ? 'شامل الضريبة' : 'قبل الضريبة') + ')';
+  $('edPrice').value = current.cost;
+  $('edTax').innerHTML = TAX_CHIPS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  $('edTax').value = current.tax === null ? '' : String(current.tax);
+  $('savedMark').textContent = '';
+  markChips();
+}
+let savingEdit = Promise.resolve();
+function saveEdit() {
+  if (!current) return savingEdit;
   const price = $('edPrice').value.trim();
-  try {
-    const v = await store.updateProduct(current.id, {
-      cost: price === '' ? current.cost : parseFloat(price),
-      tax: $('edTax').value === '' ? null : Number($('edTax').value),
-    });
-    current = v;
-    renderProductInfo();
-    $('editBox').hidden = true; $('editToggle').classList.remove('open');
-    toast('تم حفظ السعر والضريبة', 'ok');
-  } catch (e) { toast(e.message, 'err'); }
-});
+  const taxV = $('edTax').value === '' ? null : Number($('edTax').value);
+  const cost = price === '' || isNaN(parseFloat(price)) ? current.cost : parseFloat(price);
+  if (cost === current.cost && taxV === current.tax) return savingEdit;
+  const id = current.id;
+  savingEdit = savingEdit.then(async () => {
+    try {
+      const v = await store.updateProduct(id, { cost, tax: taxV });
+      if (current && current.id === id) { current = v; renderProductInfo(); }
+      $('savedMark').textContent = 'تم حفظ السعر والضريبة ✓';
+      FX.tab();
+    } catch (e) { toast(e.message, 'err'); }
+  });
+  return savingEdit;
+}
+$('edPrice').addEventListener('change', saveEdit);
+$('edPrice').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); saveEdit(); $('qty').focus(); } });
 
 function showNotFound(text) {
   hideAll();
@@ -238,10 +238,11 @@ let adding = false;
 async function addCurrent() {
   if (!current || adding) return;
   const qty = qtyVal();
-  if (qty <= 0) { toast('يجب أن تكون الكمية أكبر من صفر', 'err'); return; }
+  if (qty <= 0) { toast('أدخل الكمية', 'err'); $('qty').focus(); return; }
   adding = true;
   $('addBtn').disabled = true;
   try {
+    await saveEdit();
     const p = current;
     const r = await store.addCount(p.id, qty, counter());
     toast(`تمت إضافة ${nf.format(qty)} — المجموع ${nf.format(r.counted)} ${p.unit}`, 'ok');

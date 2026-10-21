@@ -265,3 +265,7 @@ main > section:not([hidden]) { animation: pageIn .32s ease both; }
 .taxchips button.on { background: var(--brand); border-color: var(--brand); color: #fff; box-shadow: 0 3px 10px rgba(40,35,93,.3); transform: translateY(-1px); }
 
 @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+.quickedit { display: grid; gap: 10px; margin-top: 10px; padding: 12px; border-radius: 14px; background: linear-gradient(180deg, #fff, #f6f5fb); border: 1.5px solid var(--brand-soft); }
+.quickedit input { font-size: 1.1rem; }
+.savedmark { min-height: 1.2em; font-size: .8rem; color: var(--brand); font-weight: 700; animation: popIn .3s ease both; }

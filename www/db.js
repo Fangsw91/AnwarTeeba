@@ -6,7 +6,7 @@
   const r3 = x => Math.round(x * 1000) / 1000;
   const r6 = x => Math.round(x * 1e6) / 1e6;
   /** مفتاح الباركود: بدون أصفار بادئة (UPC-A و EAN-13 لنفس الصنف يتطابقوا) */
-  const TAX_RATES = [0, 1, 2, 5, 10, 16];
+  const TAX_RATES = [0, 1, 2, 4, 5, 10, 16];
   const bkey = b => String(b == null ? '' : b).replace(/^0+(?=\d)/, '');
 
   /** تطبيع للبحث: يشيل التشكيل ويوحّد الألف والياء والتاء المربوطة والأرقام العربية */
@@ -450,7 +450,7 @@
       return { rows: rows.slice(offset, offset + limit).map(rowOf), total, hasMore: offset + limit < total };
     }
 
-    /** تقرير حسب فئة الضريبة (للأصناف المعدودة). الفئات: 0,1,2,5,10,16 + "غير محدد" */
+    /** تقرير حسب فئة الضريبة (للأصناف المعدودة). الفئات: 0,1,2,4,5,10,16 + "غير محدد" */
     function taxReport() {
       const cats = [...TAX_RATES, null].map(rate => ({ tax: rate, products: 0, items: 0, qty: 0, base: 0, taxAmount: 0, gross: 0 }));
       const at = rate => cats[rate === null ? cats.length - 1 : TAX_RATES.indexOf(rate)];

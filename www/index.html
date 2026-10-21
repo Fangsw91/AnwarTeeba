@@ -43,25 +43,20 @@
     <section id="product" class="card" hidden>
       <div class="prod-name" id="pName"></div>
       <div class="muted" id="pMeta"></div>
-      <div class="priceline">
-        <span id="pPrice"></span>
-        <button type="button" class="editbtn" id="editToggle"><i>✎</i><span>تعديل السعر والضريبة</span></button>
-      </div>
-      <div id="editBox" class="stack editbox" hidden>
+      <div class="priceline"><span id="pPrice"></span></div>
+      <div class="quickedit">
         <label class="field"><span id="edPriceLbl">سعر الشراء للوحدة</span>
           <input id="edPrice" type="number" inputmode="decimal" step="any" min="0">
         </label>
         <div class="field">نسبة الضريبة
           <div class="taxchips" id="edChips"></div>
         </div>
-        <label class="field" hidden>
-          <select id="edTax"><option value="">غير محدد</option><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option></select>
-        </label>
-        <button type="button" class="btn block" id="edSave">حفظ التعديل</button>
+        <select id="edTax" hidden><option value=""></option></select>
+        <div class="savedmark" id="savedMark"></div>
       </div>
       <div class="qty-row">
         <button type="button" class="btn ghost round" id="minus">−</button>
-        <input id="qty" type="number" inputmode="decimal" step="any" min="0" value="1">
+        <input id="qty" type="number" inputmode="decimal" step="any" min="0" placeholder="الكمية">
         <button type="button" class="btn ghost round" id="plus">+</button>
       </div>
       <div class="chips">
@@ -143,7 +138,7 @@
       <label class="field" id="repRateBox" hidden>الفئة
         <select id="repRate">
           <option value="all">كل الفئات</option>
-          <option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option>
+          <option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option>
           <option value="none">غير محدد</option>
         </select>
       </label>
@@ -175,7 +170,7 @@
           <option value="counted">معدودة (الأعلى قيمة أولاً)</option>
         </select>
         <select id="fTax">
-          <option value="all">كل فئات الضريبة</option><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option><option value="none">غير محدد</option>
+          <option value="all">كل فئات الضريبة</option><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option><option value="none">غير محدد</option>
         </select>
         <input id="fQ" placeholder="بحث بالاسم أو الباركود">
       </div>
@@ -201,7 +196,7 @@
       <h3>تحديد الضريبة للأصناف</h3>
       <input id="bulkQ" placeholder="كلمة البحث (مثال: المراعي)">
       <div class="note" id="bulkCount"></div>
-      <select id="bulkTax"><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option></select>
+      <select id="bulkTax"><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option></select>
       <button class="btn block" id="bulkBtn">تطبيق على الأصناف المطابقة</button>
       <div id="bulkRes" class="note"></div>
       <div class="note" id="taxUnset"></div>
