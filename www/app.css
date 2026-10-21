@@ -341,3 +341,4 @@ main > section:not([hidden]) { animation: pageIn .32s ease both; }
 .favchips small { color: var(--muted); font-weight: 600; direction: ltr; }
 .prevnote { display: inline-block; margin: 6px 0; padding: 4px 12px; border-radius: 99px; background: #fdf1e0; color: #8a5a0a; font-size: .85rem; font-weight: 700; animation: popIn .3s ease both; }
 #confirm .cf-btns .btn[hidden] { display: none; }
+html { scroll-padding-top: 8rem; scroll-padding-bottom: 6rem; }
