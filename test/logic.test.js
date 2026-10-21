@@ -335,5 +335,21 @@ async function t(name, fn) {
     assert.equal(M.lookup('1001')[0].tax, 0);
   });
 
+  await t('الدمج يأخذ الضريبة المحددة من الملف للأصناف الموجودة بضريبة غير محددة', async () => {
+    const X = Inv.createStore(); await X.init('dev-merge-x'); await X.setMeta('deviceName', 'المدير');
+    await X.importProducts([['رقم المادة', 'اسم المادة', 'اخر سعر شراء'], ['7001', 'شاي', 2], ['7002', 'سكر', 1]]);
+    const Y = Inv.createStore(); await Y.init('dev-merge-y'); await Y.setMeta('deviceName', 'سامي');
+    await Y.importProducts([['رقم المادة', 'اسم المادة', 'اخر سعر شراء'], ['7001', 'شاي', 2], ['7002', 'سكر', 1]]);
+    await Y.updateProduct(Y.lookup('7001')[0].id, { tax: 16 });
+    await Y.updateProduct(Y.lookup('7002')[0].id, { tax: 4 });
+    await Y.addCount(Y.lookup('7001')[0].id, 3, 's');
+    const r = await X.mergeCsv(Y.exportCsv());
+    assert.equal(X.lookup('7001')[0].tax, 16); assert.equal(X.lookup('7002')[0].tax, 4);
+    assert.equal(r.taxes, 2);
+    await X.updateProduct(X.lookup('7001')[0].id, { tax: 5 });
+    await X.mergeCsv(Y.exportCsv());
+    assert.equal(X.lookup('7001')[0].tax, 5);                                  // لا يستبدل ضريبة محددة
+  });
+
   console.log(`\n${passed} اختبار نجح${process.exitCode ? ' — وفي اختبارات فشلت' : ''}`);
 })();

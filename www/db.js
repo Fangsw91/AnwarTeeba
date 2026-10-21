@@ -589,10 +589,15 @@
       const newProducts = [], newCounts = [];
       const pending = new Map();   // أصناف جديدة داخل نفس الملف
       let skipped = 0;
+      const taxed = new Map();   // أصناف عندنا ضريبتها غير محددة وجاءت محددة من الملف
       for (const row of rows.slice(1)) {
         const barcode = cleanCode(cleanBarcode(row[0]));
         const name = String(row[1] == null ? '' : row[1]).trim();
         const qty = r3(parseNumber(row[4]));
+        if (name && taxIdx >= 0) {
+          const ex = findExisting(barcode, name), ft = parseTax(row[taxIdx]);
+          if (ex && (ex.tax === null || ex.tax === undefined) && ft !== undefined) { ex.tax = ft; ex.tm = true; taxed.set(ex.id, ex); }
+        }
         if (!name || qty <= 0) { skipped++; continue; }
         const key = barcode ? bkey(barcode) : 'n:' + norm(name);
         let p = findExisting(barcode, name) || pending.get(key);
@@ -612,6 +617,7 @@
       await write(['products', 'counts'], t => {
         old.forEach(c => t.objectStore('counts').delete(c.id));
         newProducts.forEach(p => t.objectStore('products').put(plain(p)));
+        taxed.forEach(p => t.objectStore('products').put(plain(p)));
         newCounts.forEach(c => t.objectStore('counts').put(c));
       });
       // نحدّث الذاكرة بعد نجاح الحفظ
@@ -626,7 +632,7 @@
         S.totals.set(c.productId, r3(counted(c.productId) + c.qty));
       }
       S.nextCountId += newCounts.length;
-      return { merged: newCounts.length, created: newProducts.length, skipped, label, replaced: old.length };
+      return { merged: newCounts.length, created: newProducts.length, skipped, label, replaced: old.length, taxes: taxed.size };
     }
 
     /* ---------- التصفير ---------- */

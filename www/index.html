@@ -9,6 +9,33 @@
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+<symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 9v6M12 9v6M16 9v6"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+<symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7 9l5-5 5 5M5 20h14"/></symbol>
+<symbol id="i-merge" viewBox="0 0 24 24"><path d="M5 5l7 7 7-7M12 12v8"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></symbol>
+<symbol id="i-percent" viewBox="0 0 24 24"><path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.5-5.8M20 4v5h-5"/></symbol>
+<symbol id="i-type" viewBox="0 0 24 24"><path d="M5 7V5h14v2M12 5v14M9 19h6"/></symbol>
+<symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 0 1 0 6"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></symbol>
+<symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/></symbol>
+</defs></svg>
 <div id="loading">
   <div class="ld-name">أنوار طيبة للتموين</div>
   <div class="ld-bar"><i></i></div>
@@ -25,7 +52,7 @@
       <h3>اسم المستخدم (أو اسم الجهاز)</h3>
       <div class="row">
         <input id="nameInput" maxlength="40" placeholder="مثال: أحمد">
-        <button class="btn" id="nameSave">حفظ</button>
+        <button class="btn" id="nameSave"><svg class="ic"><use href="#i-check"/></svg>حفظ</button>
       </div>
     </div>
 
@@ -34,7 +61,7 @@
     <form id="searchForm" class="card" autocomplete="off">
       <div class="row">
         <input id="q" placeholder="امسح الباركود أو اكتب اسم الصنف" enterkeyhint="search" autocapitalize="off" autocorrect="off">
-        <button type="button" class="btn" id="scanBtn" aria-label="مسح بالكاميرا">📷</button>
+        <button type="button" class="btn" id="scanBtn" aria-label="مسح بالكاميرا"><svg class="ic"><use href="#i-scan"/></svg></button>
       </div>
     </form>
 
@@ -55,9 +82,9 @@
         <div class="savedmark" id="savedMark"></div>
       </div>
       <div class="qty-row">
-        <button type="button" class="btn ghost round" id="minus">−</button>
+        <button type="button" class="btn ghost round" id="minus" aria-label="إنقاص"><svg class="ic"><use href="#i-minus"/></svg></button>
         <input id="qty" type="number" inputmode="decimal" step="any" min="0" placeholder="الكمية">
-        <button type="button" class="btn ghost round" id="plus">+</button>
+        <button type="button" class="btn ghost round" id="plus" aria-label="زيادة"><svg class="ic"><use href="#i-plus"/></svg></button>
       </div>
       <div class="chips">
         <button type="button" data-add="5">+5</button>
@@ -66,8 +93,8 @@
         <button type="button" data-add="24">+24</button>
       </div>
       <div class="stack">
-        <button type="button" class="btn block" id="addBtn">إضافة للجرد</button>
-        <button type="button" class="btn ghost block" id="cancelBtn">إلغاء</button>
+        <button type="button" class="btn block" id="addBtn"><svg class="ic"><use href="#i-plus"/></svg>إضافة للجرد</button>
+        <button type="button" class="btn ghost block" id="cancelBtn"><svg class="ic"><use href="#i-x"/></svg>إلغاء</button>
       </div>
     </section>
 
@@ -77,30 +104,23 @@
         <input id="nfBarcode" placeholder="الباركود (اختياري)">
         <input id="nfName" placeholder="اسم الصنف">
         <input id="nfUnit" placeholder="الوحدة (حبة، كغم، علبة…)" value="حبة">
-        <button type="button" class="btn block" id="nfAdd">إضافة الصنف والعدّ</button>
-        <button type="button" class="btn ghost block" id="nfCancel">إلغاء</button>
+        <button type="button" class="btn block" id="nfAdd"><svg class="ic"><use href="#i-plus"/></svg>إضافة الصنف والعدّ</button>
+        <button type="button" class="btn ghost block" id="nfCancel"><svg class="ic"><use href="#i-x"/></svg>إلغاء</button>
       </div>
     </section>
 
-    <section class="card">
-      <h3>آخر العمليات المسجّلة</h3>
-      <ul class="list" id="recent"></ul>
-      <div class="muted" id="recentEmpty">لا توجد عمليات بعد.</div>
-    </section>
   </section>
 
   <!-- ===== النتائج ===== -->
   <section id="tab-report" class="grid" hidden>
-    <div class="card">
+    <details class="acc" open>
+      <summary><svg class="ic"><use href="#i-gauge"/></svg><span>ملخص الجرد</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+      <div class="acc-body">
+    <div class="card inner">
       <div class="muted">تقدّم الجرد على هذا الجهاز</div>
       <div class="big"><span id="pct">0</span>%</div>
       <div class="progress"><i id="bar" style="width:0%"></i></div>
       <div class="muted"><b id="items">0</b> من <b id="products">0</b> صنف</div>
-    </div>
-
-    <div class="seg" id="taxView">
-      <button type="button" data-v="excl" class="on">بدون ضريبة</button>
-      <button type="button" data-v="incl">مع الضريبة</button>
     </div>
 
     <div class="kpis">
@@ -110,12 +130,24 @@
       <div class="kpi"><span>المعدود بعد الضريبة</span><b id="valueG">0.00</b></div>
       <div class="kpi"><span>مبلغ الضريبة</span><b id="taxAmt">0.00</b></div>
       <div class="kpi" data-book><span>أصناف فيها فرق</span><b id="diffs">0</b></div>
-      <div class="kpi" data-book><span id="shortLbl">قيمة النقص</span><b class="neg" id="short">0.00</b></div>
-      <div class="kpi" data-book><span id="surplusLbl">قيمة الزيادة</span><b class="pos" id="surplus">0.00</b></div>
+      <div class="kpi" data-book><span>النقص قبل الضريبة</span><b class="neg" id="short">0.00</b></div>
+      <div class="kpi" data-book><span>النقص بعد الضريبة</span><b class="neg" id="shortG">0.00</b></div>
+      <div class="kpi" data-book><span>الزيادة قبل الضريبة</span><b class="pos" id="surplus">0.00</b></div>
+      <div class="kpi" data-book><span>الزيادة بعد الضريبة</span><b class="pos" id="surplusG">0.00</b></div>
     </div>
 
-    <div class="card">
-      <h3>تقرير فئات الضريبة (الأصناف المعدودة)</h3>
+      </div>
+    </details>
+    <section class="card recentcard">
+      <div class="rc-head"><svg class="ic"><use href="#i-clock"/></svg><h3>آخر العمليات المسجّلة</h3></div>
+      <ul class="list" id="recent"></ul>
+      <ul class="list" id="recentMore" hidden></ul>
+      <div class="muted" id="recentEmpty">لا توجد عمليات بعد.</div>
+      <button type="button" class="rc-toggle" id="recentToggle" hidden><span id="recentToggleTxt">عرض الباقي</span><svg class="ic chev"><use href="#i-chevron"/></svg></button>
+    </section>
+    <details class="acc">
+      <summary><svg class="ic"><use href="#i-percent"/></svg><span>فئات الضريبة</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+      <div class="acc-body">
       <div class="tablewrap">
         <table id="taxTable">
           <thead><tr><th>الفئة (معدود/كل)</th><th>قبل</th><th>الضريبة</th><th>بعد</th></tr></thead>
@@ -123,10 +155,13 @@
         </table>
       </div>
       <div class="note" id="taxNote"></div>
-    </div>
 
-    <div class="card stack">
-      <h3>إصدار تقرير</h3>
+      </div>
+    </details>
+    <details class="acc">
+      <summary><svg class="ic"><use href="#i-file"/></svg><span>إصدار تقرير</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+      <div class="acc-body">
+      <div class="stack">
       <label class="field">نوع التقرير
         <select id="repType">
           <option value="full">تقرير الجرد الشامل</option>
@@ -142,25 +177,31 @@
         </select>
       </label>
       <div class="seg" id="repFmt">
-        <button type="button" data-f="xlsx" class="on">إكسل</button>
-        <button type="button" data-f="pdf">PDF</button>
+        <button type="button" data-f="xlsx" class="on"><svg class="ic"><use href="#i-sheet"/></svg>إكسل</button>
+        <button type="button" data-f="pdf"><svg class="ic"><use href="#i-file"/></svg>PDF</button>
       </div>
-      <button class="btn block" id="repBtn">إصدار التقرير</button>
+      <button class="btn block" id="repBtn"><svg class="ic"><use href="#i-download"/></svg>إصدار التقرير</button>
       <div class="progress-note" id="repNote"></div>
-    </div>
-
-    <div class="card stack">
-      <h3>نسخة الجرد والدمج</h3>
-      <button class="btn ghost block" id="exportBtn">تصدير نسخة الجرد</button>
+      </div>
+      </div>
+    </details>
+    <details class="acc">
+      <summary><svg class="ic"><use href="#i-merge"/></svg><span>نسخة الجرد والدمج</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+      <div class="acc-body">
+      <div class="stack">
+      <button class="btn ghost block" id="exportBtn"><svg class="ic"><use href="#i-upload"/></svg>تصدير نسخة الجرد</button>
       <div class="field">دمج ملفات من أجهزة أخرى
         <label class="filebtn"><input type="file" id="mergeFiles" multiple><span class="btn ghost">اختيار الملفات</span></label>
         <span class="note" id="mergeFileName">لم يُختر أي ملف</span>
       </div>
-      <button class="btn ghost block" id="mergeBtn">دمج الملفات المختارة</button>
+      <button class="btn ghost block" id="mergeBtn"><svg class="ic"><use href="#i-merge"/></svg>دمج الملفات المختارة</button>
       <div id="mergeRes" class="note pre"></div>
-    </div>
-
-    <div class="card">
+      </div>
+      </div>
+    </details>
+    <details class="acc">
+      <summary><svg class="ic"><use href="#i-list"/></svg><span>قائمة الأصناف</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+      <div class="acc-body">
       <div class="filters">
         <select id="fFilter">
           <option value="all">كل الأصناف</option>
@@ -176,27 +217,29 @@
       <div class="note" id="fTotal"></div>
       <div id="rows"></div>
       <button class="btn ghost block" id="more" hidden style="margin-top:10px">عرض المزيد</button>
-    </div>
+
+      </div>
+    </details>
   </section>
 
   <!-- ===== الأصناف ===== -->
   <section id="tab-products" class="grid" hidden>
     <div class="card stack">
-      <h3>استيراد الأصناف من ملف</h3>
+      <h3 class="h-ic"><svg class="ic"><use href="#i-upload"/></svg>استيراد الأصناف من ملف</h3>
 <label class="filebtn"><input type="file" id="file" accept=".xls,.xlsx,.csv,.txt,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><span class="btn ghost">اختيار ملف</span></label>
       <div class="note" id="fileName">لم يُختر أي ملف</div>
-      <button class="btn block" id="importBtn">استيراد</button>
+      <button class="btn block" id="importBtn"><svg class="ic"><use href="#i-upload"/></svg>استيراد</button>
       <div id="importRes" class="note pre"></div>
       <div class="note">عدد الأصناف الحالي: <b id="pCount">0</b></div>
-      <button class="btn ghost block" id="sampleBtn">إضافة أصناف تجريبية</button>
+      <button class="btn ghost block" id="sampleBtn"><svg class="ic"><use href="#i-plus"/></svg>إضافة أصناف تجريبية</button>
     </div>
   
     <div class="card stack">
-      <h3>تحديد الضريبة للأصناف</h3>
+      <h3 class="h-ic"><svg class="ic"><use href="#i-percent"/></svg>تحديد الضريبة للأصناف</h3>
       <input id="bulkQ" placeholder="كلمة البحث (مثال: المراعي)">
       <div class="note" id="bulkCount"></div>
       <select id="bulkTax"><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option></select>
-      <button class="btn block" id="bulkBtn">تطبيق على الأصناف المطابقة</button>
+      <button class="btn block" id="bulkBtn"><svg class="ic"><use href="#i-percent"/></svg>تطبيق على الأصناف المطابقة</button>
       <div id="bulkRes" class="note"></div>
       <div class="note" id="taxUnset"></div>
     </div>
@@ -205,7 +248,7 @@
   <!-- ===== الإعدادات ===== -->
   <section id="tab-settings" class="grid" hidden>
     <div class="card stack">
-      <h3>هذا الجهاز</h3>
+      <h3 class="h-ic"><svg class="ic"><use href="#i-user"/></svg>هذا الجهاز</h3>
       <label class="field">اسمك / اسم الجهاز
         <input id="setName" maxlength="40">
       </label>
@@ -221,11 +264,11 @@
       <label class="field">اسم المنشأة (يظهر في التقارير)
         <input id="setCompany" maxlength="60">
       </label>
-      <button class="btn block" id="setSave">حفظ</button>
+      <button class="btn block" id="setSave"><svg class="ic"><use href="#i-check"/></svg>حفظ</button>
     </div>
 
     <div class="card stack">
-      <h3>الأصوات والمؤثرات</h3>
+      <h3 class="h-ic"><svg class="ic"><use href="#i-volume"/></svg>الأصوات والمؤثرات</h3>
       <div class="seg" id="soundSeg">
         <button type="button" data-v="1">تشغيل</button>
         <button type="button" data-v="0">إيقاف</button>
@@ -233,7 +276,7 @@
     </div>
 
     <div class="card stack">
-      <h3>حجم الخط</h3>
+      <h3 class="h-ic"><svg class="ic"><use href="#i-type"/></svg>حجم الخط</h3>
       <div class="seg" id="fontSeg">
         <button type="button" data-s="16">صغير</button>
         <button type="button" data-s="19">متوسط</button>
@@ -243,32 +286,32 @@
     </div>
 
     <div class="card stack danger-zone">
-      <h3>تصفير</h3>
-      <button class="btn danger block" id="resetBtn">بدء جرد جديد (مسح العدّ وإبقاء الأصناف)</button>
-      <button class="btn ghost block" id="wipeBtn">مسح كل شيء (الأصناف والعدّ)</button>
+      <h3 class="h-ic"><svg class="ic"><use href="#i-refresh"/></svg>تصفير</h3>
+      <button class="btn danger block" id="resetBtn"><svg class="ic"><use href="#i-refresh"/></svg>بدء جرد جديد (مسح العدّ وإبقاء الأصناف)</button>
+      <button class="btn ghost block" id="wipeBtn"><svg class="ic"><use href="#i-trash"/></svg>مسح كل شيء (الأصناف والعدّ)</button>
     </div>
   </section>
 
 </main>
 
 <nav class="nav" id="nav">
-  <button data-tab="count" class="on"><i>🔍</i>الجرد</button>
-  <button data-tab="report"><i>📊</i>النتائج</button>
-  <button data-tab="products"><i>📦</i>الأصناف</button>
-  <button data-tab="settings"><i>⚙️</i>الإعدادات</button>
+  <button data-tab="count" class="on"><i><svg class="ic"><use href="#i-scan"/></svg></i>الجرد</button>
+  <button data-tab="report"><i><svg class="ic"><use href="#i-chart"/></svg></i>النتائج</button>
+  <button data-tab="products"><i><svg class="ic"><use href="#i-box"/></svg></i>الأصناف</button>
+  <button data-tab="settings"><i><svg class="ic"><use href="#i-gear"/></svg></i>الإعدادات</button>
 </nav>
 
 <div id="scanner" hidden>
   <video id="video" playsinline muted></video>
   <div class="frame"></div>
-  <button class="btn ghost" id="torchBtn" hidden>المصباح</button>
-  <button class="btn" id="scanClose">إغلاق</button>
+  <button class="btn ghost" id="torchBtn" hidden><svg class="ic"><use href="#i-bolt"/></svg>المصباح</button>
+  <button class="btn" id="scanClose"><svg class="ic"><use href="#i-x"/></svg>إغلاق</button>
 </div>
 
 <div id="confirm" hidden>
   <div class="cf-box">
     <div class="cf-msg" id="cfMsg"></div>
-    <div class="cf-btns"><button type="button" class="btn danger" id="cfYes">تأكيد</button><button type="button" class="btn ghost" id="cfNo">تراجع</button></div>
+    <div class="cf-btns"><button type="button" class="btn danger" id="cfYes"><svg class="ic"><use href="#i-check"/></svg>تأكيد</button><button type="button" class="btn ghost" id="cfNo"><svg class="ic"><use href="#i-x"/></svg>تراجع</button></div>
   </div>
 </div>
 

@@ -5,7 +5,6 @@ const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
 const mf = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pf = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
-const inc = () => store.getMeta('taxView', 'excl') === 'incl';
 const taxTxt = t => (t === null || t === undefined ? 'ضريبة غير محددة' : 'ضريبة ' + t + '%');
 const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
@@ -106,7 +105,7 @@ function showTab(tab) {
   ['count', 'report', 'products', 'settings'].forEach(t => { $('tab-' + t).hidden = t !== tab; });
   if (tab !== 'count') stopScanner();
   if (tab === 'count') { refreshHeader(); loadRecent(); }
-  if (tab === 'report') { renderStats(); renderTaxTable(); loadReport(false); }
+  if (tab === 'report') { renderStats(); renderTaxTable(); loadReport(false); loadRecent(); }
   if (tab === 'products') { $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
   if (tab === 'settings') { $('setIncl').value = store.getMeta('priceIncludesTax', false) ? 'incl' : 'excl'; $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); }
 }
@@ -145,7 +144,7 @@ async function doLookup(text, scanned) {
 
 function renderResults(items, total) {
   const box = $('results');
-  const price = p => pf.format(inc() ? p.priceGross : p.priceBase);
+  const price = p => pf.format(p.priceBase);
   box.innerHTML = `<div class="info">${nf.format(total)} صنف مطابق${total > items.length ? ' (عرض أول ' + items.length + ')' : ''}</div>` +
     items.map((p, i) =>
     `<button type="button" class="result" data-i="${i}">
@@ -281,21 +280,34 @@ $('nfAdd').addEventListener('click', async () => {
 
 /* ---------- آخر ما سجّلته ---------- */
 const hhmm = ts => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-function loadRecent() {
-  const items = store.recent(12);
-  $('recentEmpty').hidden = items.length > 0;
-  $('recent').innerHTML = items.map(r =>
-    `<li><div class="grow">${esc(r.name)}<small>${hhmm(r.ts)}</small></div>
+const recentRow = r => `<li><div class="grow">${esc(r.name)}<small>${hhmm(r.ts)}</small></div>
        <div class="q">${nf.format(r.qty)} ${esc(r.unit)}</div>
-       <button class="x" data-id="${r.id}" data-name="${esc(r.name)}" data-q="${nf.format(r.qty)} ${esc(r.unit)}" aria-label="إلغاء">✕</button></li>`).join('');
+       <button class="x" data-id="${r.id}" data-name="${esc(r.name)}" data-q="${nf.format(r.qty)} ${esc(r.unit)}" aria-label="إلغاء"><svg class="ic"><use href="#i-x"/></svg></button></li>`;
+function loadRecent() {
+  const items = store.recent(30);
+  $('recentEmpty').hidden = items.length > 0;
+  $('recent').innerHTML = items.slice(0, 2).map(recentRow).join('');
+  $('recentMore').innerHTML = items.slice(2).map(recentRow).join('');
+  const more = items.length > 2;
+  $('recentToggle').hidden = !more;
+  if (!more) { $('recentMore').hidden = true; $('recentToggle').classList.remove('open'); }
+  $('recentToggleTxt').textContent = $('recentMore').hidden ? `عرض الباقي (${items.length - 2})` : 'إخفاء';
 }
-$('recent').addEventListener('click', async ev => {
+$('recentToggle').addEventListener('click', () => {
+  const open = $('recentMore').hidden;
+  $('recentMore').hidden = !open;
+  $('recentToggle').classList.toggle('open', open);
+  loadRecent();
+});
+async function onRecentClick(ev) {
   const b = ev.target.closest('.x');
   if (!b) return;
   if (!(await askConfirm(`إلغاء هذا العدّ؟\n${b.dataset.name} — ${b.dataset.q}`, 'نعم، إلغاء'))) return;
-  try { await store.undoCount(+b.dataset.id); toast('تم الإلغاء'); loadRecent(); }
+  try { await store.undoCount(+b.dataset.id); toast('تم الإلغاء'); loadRecent(); renderStats(); renderTaxTable(); loadReport(false); }
   catch (e) { toast(e.message, 'err'); }
-});
+}
+$('recent').addEventListener('click', onRecentClick);
+$('recentMore').addEventListener('click', onRecentClick);
 
 /* ---------- ماسح الكاميرا (ZXing) ---------- */
 let scan = null, lastCode = '', lastAt = 0;
@@ -409,15 +421,11 @@ function renderStats() {
   $('valueG').textContent = mf.format(s.valueG);
   $('taxAmt').textContent = mf.format(s.tax);
   $('diffs').textContent = nf.format(s.diffs);
-  const g = inc();
-  $('short').textContent = mf.format(g ? s.shortG : s.short);
-  $('surplus').textContent = mf.format(g ? s.surplusG : s.surplus);
-  $('shortLbl').textContent = g ? 'قيمة النقص (مع الضريبة)' : 'قيمة النقص (بدون ضريبة)';
-  $('surplusLbl').textContent = g ? 'قيمة الزيادة (مع الضريبة)' : 'قيمة الزيادة (بدون ضريبة)';
+  $('short').textContent = mf.format(s.short); $('shortG').textContent = mf.format(s.shortG);
+  $('surplus').textContent = mf.format(s.surplus); $('surplusG').textContent = mf.format(s.surplusG);
   const hasBook = s.withBook > 0;
   document.querySelectorAll('[data-book]').forEach(el => { el.hidden = !hasBook; });
   if (!hasBook && $('fFilter').value === 'diff') $('fFilter').value = 'all';
-  document.querySelectorAll('#taxView button').forEach(b => b.classList.toggle('on', b.dataset.v === (g ? 'incl' : 'excl')));
 }
 
 function renderTaxTable() {
@@ -440,26 +448,18 @@ $('taxRows').addEventListener('click', ev => {
   loadReport(false);
   $('rows').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
-$('taxView').addEventListener('click', async ev => {
-  const b = ev.target.closest('button');
-  if (!b) return;
-  await store.setMeta('taxView', b.dataset.v);
-  renderStats(); loadReport(false);
-});
-
 let reportOffset = 0;
 function loadReport(append) {
   if (!append) reportOffset = 0;
   const r = store.report($('fFilter').value, $('fQ').value, reportOffset, 100, $('fTax').value);
-  const g = inc();
   const html = r.rows.map(x => {
     const d = x.diff;
     const diff = x.uncounted ? 'لم يُعدّ'
-      : d === null ? `<b>${mf.format(g ? x.amountG : x.amount)}</b>`
+      : d === null ? `<b>${mf.format(x.amount)}</b>`
       : d === 0 ? 'مطابق'
       : `<b class="${d < 0 ? 'neg' : 'pos'}">${d > 0 ? '+' : ''}${nf.format(d)}</b>`;
     const line = (x.system === null ? '' : `دفتري ${nf.format(x.system)} · `) + `معدود ${x.uncounted ? '—' : nf.format(x.counted)}`;
-    const val = !x.uncounted && d !== null ? `<span>${mf.format(g ? x.amountG : x.amount)} قيمة المعدود</span>` : '';
+    const val = !x.uncounted ? `<span>${mf.format(x.amount)} قبل الضريبة</span><span>${mf.format(x.amountG)} بعد الضريبة</span>` : '';
     return `<div class="rrow ${x.uncounted ? 'unc' : ''}">
       <div class="grow">${esc(x.name)}<small>${esc(x.barcode || 'بدون باركود')} · ${esc(x.unit)} · ${x.tax === null ? 'ضريبة غير محددة' : 'ضريبة ' + x.tax + '%'}</small></div>
       <div class="nums"><span>${line}</span>${diff}${val}</div>
@@ -510,7 +510,7 @@ $('mergeBtn').addEventListener('click', async () => {
       const text = Inv.csv.decodeBuffer(await f.arrayBuffer());
       const fallback = f.name.replace(/\.[^.]+$/, '').replace(/^jard-/, '');
       const r = await store.mergeCsv(text, fallback);
-      out.push(`✓ جهاز «${r.label}»: دُمج ${nf.format(r.merged)} صنف` + (r.created ? ` (منها ${r.created} صنف جديد)` : '') +
+      out.push(`✓ جهاز «${r.label}»: دُمج ${nf.format(r.merged)} صنف` + (r.created ? ` (منها ${r.created} صنف جديد)` : '') + (r.taxes ? ` — حُدّدت ضريبة ${r.taxes} صنف` : '') +
         (r.replaced ? ' — استبدل الدمج السابق من نفس الجهاز' : ''));
     } catch (e) {
       out.push(`✗ ${f.name}: ${e.message}`);

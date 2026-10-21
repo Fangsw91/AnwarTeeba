@@ -279,3 +279,31 @@ main > section:not([hidden]) { animation: pageIn .32s ease both; }
 .taxchips.need { animation: shake .4s ease; }
 .taxchips.need button { border-color: var(--danger); }
 @keyframes shake { 0%,100% { transform: none; } 20% { transform: translateX(8px); } 40% { transform: translateX(-8px); } 60% { transform: translateX(6px); } 80% { transform: translateX(-4px); } }
+
+/* ---------- الأيقونات والقوائم ---------- */
+.ic { width: 1.25em; height: 1.25em; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.2em; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn.round .ic { width: 1.4em; height: 1.4em; }
+.seg button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.nav button i { display: grid; place-items: center; }
+.nav button i .ic { width: 1.55rem; height: 1.55rem; }
+.h-ic { display: flex; align-items: center; gap: 8px; }
+.x .ic { width: 1.1em; height: 1.1em; }
+.x { display: grid; place-items: center; }
+
+.acc { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; animation: popIn .35s ease both; }
+.acc > summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 14px; font-weight: 700; font-size: 1.05rem; color: var(--brand); cursor: pointer; user-select: none; }
+.acc > summary::-webkit-details-marker { display: none; }
+.acc > summary span { flex: 1; }
+.acc > summary > .ic:first-child { background: var(--brand-soft); padding: 6px; width: 2rem; height: 2rem; border-radius: 10px; }
+.acc .chev { transition: transform .25s ease; color: var(--muted); }
+.acc[open] > summary .chev { transform: rotate(180deg); }
+.acc[open] > summary { border-bottom: 1px solid var(--line); }
+.acc-body { padding: 14px; display: grid; gap: 12px; animation: pageIn .3s ease both; min-width: 0; }
+.card.inner { border: 0; padding: 0; animation: none; }
+.recentcard .rc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: var(--muted); }
+.recentcard .rc-head h3 { margin: 0; }
+.rc-toggle { width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; padding: 10px; border: 1.5px dashed var(--line); background: #fff; border-radius: 12px; font: inherit; font-size: .95rem; font-weight: 700; color: var(--brand); cursor: pointer; }
+.rc-toggle .chev { transition: transform .25s ease; }
+.rc-toggle.open .chev { transform: rotate(180deg); }
+#recentMore:not([hidden]) { animation: pageIn .3s ease both; }
