@@ -262,16 +262,18 @@
       return p;
     }
 
+    const latinDigits = t => String(t || '').replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660)).replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x06F0));
     function makeMatcher(text) {
-      text = String(text || '').trim();
+      text = latinDigits(text).trim();
       if (!text) return null;
       const tk = bkey(text);
       // "المراعي" تطابق "مراعي" و "المراعي" (نشيل ال التعريف من الكلمات الطويلة)
       const words = norm(text).split(' ').filter(Boolean).slice(0, 4)
         .map(w => (w.length > 3 && w.startsWith('ال') ? w.slice(2) : w));
-      const digits = /^\d{4,}$/.test(text);
+      const digits = /^\d{4,}$/.test(text), short = /^\d{1,3}$/.test(text);
       return p => (p._k && p._k === tk)
         || (digits && p.barcode && p.barcode.includes(text))
+        || (short && p.barcode && p.barcode.startsWith(text))
         || (words.length > 0 && words.every(w => p._n.includes(w)));
     }
     const counted = id => S.totals.get(id) || 0;
@@ -284,12 +286,16 @@
     function lookupAll(text, limit) {
       const m = makeMatcher(text);
       if (!m) return { items: [], total: 0 };
+      text = latinDigits(text);
       const exact = S.byBarcode.get(bkey(String(text).trim()));
       const first = norm(text).split(' ')[0] || '';
+      const numeric = /^\d+$/.test(text.trim());
       const rest = [];
       for (const p of S.products.values()) if (p !== exact && m(p)) rest.push(p);
+      const rank = p => numeric ? (p.barcode && p.barcode.startsWith(text.trim()) ? 0 : p.barcode && p.barcode.includes(text.trim()) ? 1 : 2)
+        : (p._n.startsWith(first) ? 0 : 1);
       rest.sort((a, b) => {
-        const sa = a._n.startsWith(first) ? 0 : 1, sb = b._n.startsWith(first) ? 0 : 1;
+        const sa = rank(a), sb = rank(b);
         return sa - sb || (a._n < b._n ? -1 : a._n > b._n ? 1 : 0);
       });
       const all = exact ? [exact, ...rest] : rest;

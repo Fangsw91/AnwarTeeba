@@ -366,5 +366,15 @@ async function t(name, fn) {
     await assert.rejects(() => X.setOwnCount(id, -1), /الكمية/);
   });
 
+  await t('باركودات قصيرة (رقم أو رقمين أو 4 أرقام) تُلقى بالبحث', async () => {
+    const X = Inv.createStore(); await X.init('dev-short');
+    await X.importProducts([['رقم المادة', 'اسم المادة', 'اخر سعر شراء'], ['1', 'خبز', 1], ['12', 'ملح', 1], ['2020', 'شاي', 2], ['129', 'سكر', 1], ['6281000000099', 'أرز 1 كيلو', 3]]);
+    const r1 = X.lookupAll('1').items.map(i => i.name);
+    assert.equal(r1[0], 'خبز'); assert.ok(r1.includes('ملح') && r1.includes('سكر'));
+    assert.deepEqual(X.lookupAll('12').items.slice(0, 2).map(i => i.name), ['ملح', 'سكر']);
+    assert.equal(X.lookupAll('2020').items[0].name, 'شاي');
+    assert.equal(X.lookupAll('٢٠٢٠').items[0].name, 'شاي');                    // أرقام عربية
+  });
+
   console.log(`\n${passed} اختبار نجح${process.exitCode ? ' — وفي اختبارات فشلت' : ''}`);
 })();

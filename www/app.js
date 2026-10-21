@@ -168,8 +168,9 @@ async function doLookup(text, scanned) {
   const { items, total } = store.lookupAll(text, 200);
   hideAll();
   if (!items.length) { showNotFound(text); return 'notfound'; }
+  text = text.replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660));
   const digits = text.replace(/^0+/, '');
-  const exact = /^\d{6,}$/.test(text) && items[0].barcode && items[0].barcode.replace(/^0+/, '') === digits ? items[0] : null;
+  const exact = (/^\d{6,}$/.test(text) || (scanned && /^\d+$/.test(text))) && items[0].barcode && items[0].barcode.replace(/^0+/, '') === digits ? items[0] : null;
   if (exact) {
     selectProduct(exact);
     return 'selected';
@@ -268,8 +269,10 @@ $('searchForm').addEventListener('submit', ev => {
 $('q').addEventListener('input', debounce(() => {
   const t = $('q').value.trim();
   if (!t) { hideAll(); return; }
-  // أرقام فقط = غالباً باركود (ننتظر Enter)، نص = بحث مباشر بالاسم
-  if (t.length >= 2 && !/^\d+$/.test(t)) enqueue(() => doLookup(t, false));
+  // باركود طويل (6 أرقام فأكثر) ننتظر Enter؛ الأرقام القصيرة والنص بحث مباشر
+  const num = t.replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660));
+  if (/^\d{6,}$/.test(num)) return;
+  if (t.length >= 2 || /^\d$/.test(num)) enqueue(() => doLookup(t, false));
 }, 250));
 
 /* ---------- الكمية والإضافة ---------- */
