@@ -255,7 +255,7 @@ function selectProduct(p) {
   $('product').hidden = false; favVis(); setTimeout(updateReady, 0);
   $('prevNote').hidden = !(p.counted > 0);
   $('prevNote').textContent = p.counted > 0 ? `معدود سابقاً: ${nf.format(p.counted)} ${p.unit}` : '';
-  $('qty').focus();
+  $('edPrice').blur();
 }
 
 const UNITS = ['حبة', 'كيلو', 'غرام'];
@@ -268,22 +268,29 @@ function pickUnit(box, ev) { const b = ev.target.closest('button'); if (!b) retu
 const TAX_CHIPS = [['0', '0%'], ['1', '1%'], ['2', '2%'], ['4', '4%'], ['5', '5%'], ['10', '10%'], ['16', '16%']];
 $('edChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v="${v}">${t}</button>`).join('');
 function markChips() { document.querySelectorAll('#edChips button').forEach(b => b.classList.toggle('on', b.dataset.v === $('edTax').value)); }
-$('edChips').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b) return; $('edTax').value = b.dataset.v; markChips(); saveEdit(); });
+$('edChips').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  $('edTax').value = b.dataset.v; markChips(); saveEdit();
+  if ($('step2').hidden) { $('step2').hidden = false; $('qty').placeholder = 'الكمية (' + (unitOf($('edUnits')) || current.unit) + ')'; setTimeout(() => $('qty').focus({ preventScroll: false }), 80); }
+  updateReady();
+});
 $('edUnits').addEventListener('click', ev => { if (pickUnit($('edUnits'), ev)) { $('qty').placeholder = 'الكمية (' + unitOf($('edUnits')) + ')'; saveEdit(); } });
 function fillEdit() {
   renderUnits($('edUnits'), current.unit); $('qty').placeholder = 'الكمية (' + current.unit + ')';
   $('edPriceLbl').textContent = 'سعر الشراء للوحدة (شامل الضريبة)';
-  $('edPrice').value = current.cost;
+  $('edPrice').value = '';
+  $('edPrice').placeholder = current.cost > 0 ? 'السعر الحالي: ' + pf.format(current.cost) : 'السعر';
   $('edTax').innerHTML = '<option value=""></option>' + TAX_CHIPS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
-  $('edTax').value = current.tax === null ? '' : String(current.tax);
+  $('edTax').value = '';
   $('savedMark').textContent = '';
+  $('step2').hidden = true;
   markChips();
 }
 let savingEdit = Promise.resolve();
 function saveEdit() {
   if (!current) return savingEdit;
   const price = $('edPrice').value.trim();
-  const taxV = $('edTax').value === '' ? null : Number($('edTax').value);
+  const taxV = $('edTax').value === '' ? current.tax : Number($('edTax').value);
   const cost = price === '' || isNaN(parseFloat(price)) ? current.cost : parseFloat(price);
   const unitV = unitOf($('edUnits')) || current.unit;
   if (cost === current.cost && taxV === current.tax && unitV === current.unit) return savingEdit;
@@ -299,7 +306,7 @@ function saveEdit() {
   return savingEdit;
 }
 $('edPrice').addEventListener('change', saveEdit);
-$('edPrice').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); saveEdit(); $('qty').focus(); } });
+$('edPrice').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); saveEdit(); $('edPrice').blur(); } });
 
 function showNotFound(text) {
   hideAll();
@@ -336,7 +343,7 @@ $('addBtn').addEventListener('click', addCurrent);
 $('cancelBtn').addEventListener('click', () => { hideAll(); $('q').value = ''; $('q').focus(); });
 
 function updateReady() {
-  const ok = !!current && ($('edTax').value !== '' || current.tax !== null) && qtyVal() > 0;
+  const ok = !!current && $('edTax').value !== '' && qtyVal() > 0;
   $('addBtn').classList.toggle('ready', ok);
 }
 ['input', 'change'].forEach(ev => $('qty').addEventListener(ev, updateReady));
@@ -346,7 +353,7 @@ let adding = false;
 async function addCurrent() {
   if (!current || adding) return;
   const qty = qtyVal();
-  if ($('edTax').value === '' && current.tax === null) {
+  if ($('edTax').value === '') {
     toast('اختر نسبة الضريبة للصنف قبل الإضافة للجرد', 'err');
     const c = $('edChips'); c.classList.remove('need'); void c.offsetWidth; c.classList.add('need');
     c.scrollIntoView({ block: 'center', behavior: 'smooth' });

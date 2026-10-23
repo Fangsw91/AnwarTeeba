@@ -91,19 +91,20 @@
       <div class="prod-name" id="pName"></div>
       <div class="muted" id="pMeta"></div>
       <div class="prevnote" id="prevNote" hidden></div>
-      <div class="priceline"><span id="pPrice"></span></div>
+      <div class="priceline" hidden><span id="pPrice"></span></div>
       <div class="quickedit">
         <label class="field"><span id="edPriceLbl">سعر الشراء للوحدة</span>
           <input id="edPrice" type="number" inputmode="decimal" step="any" min="0">
         </label>
-        <div class="field">الوحدة
-          <div class="taxchips unitchips" id="edUnits"></div>
-        </div>
         <div class="field">نسبة الضريبة
           <div class="taxchips" id="edChips"></div>
         </div>
         <select id="edTax" hidden><option value=""></option></select>
         <div class="savedmark" id="savedMark"></div>
+      </div>
+      <div id="step2" hidden>
+      <div class="field unitrow">الوحدة
+        <div class="taxchips unitchips" id="edUnits"></div>
       </div>
       <div class="qty-row">
         <button type="button" class="btn ghost round" id="minus" aria-label="إنقاص"><svg class="ic"><use href="#i-minus"/></svg></button>
@@ -118,8 +119,9 @@
       </div>
       <div class="stack">
         <button type="button" class="btn block" id="addBtn"><svg class="ic"><use href="#i-plus"/></svg>إضافة للجرد</button>
-        <button type="button" class="btn ghost block" id="cancelBtn"><svg class="ic"><use href="#i-x"/></svg>إلغاء</button>
       </div>
+      </div>
+      <div class="stack"><button type="button" class="btn ghost block" id="cancelBtn"><svg class="ic"><use href="#i-x"/></svg>إلغاء</button></div>
     </section>
 
     <section id="notfound" class="card" hidden>
