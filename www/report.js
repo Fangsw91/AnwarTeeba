@@ -35,7 +35,7 @@
     let keys;
     if (t === 'income') {
       c.qty = { ...c.qty, title: 'العدد', mm: 30, xl: 14 };
-      c.price = { ...c.price, title: 'سعر الإفرادي', mm: 40, xl: 16 };
+      c.price = { ...c.price, title: 'سعر الإفرادي قبل الضريبة', mm: 46, xl: 16 };
       c.base = { ...c.base, title: 'الإجمالي قبل الضريبة', mm: 50, xl: 20 };
       keys = ['idx', 'name', 'qty', 'price', 'base'];
     } else if (t === 'uncounted') keys = ['idx', 'name', 'barcode', 'unit', 'tax', ...(book ? ['system'] : []), 'price'];

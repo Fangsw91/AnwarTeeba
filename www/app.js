@@ -158,6 +158,7 @@ function askPassword() {
 
 /* ---------- التبويبات ---------- */
 function showTab(tab) {
+  if (tab !== 'settings') unlocked = false;   // الإعدادات تُقفل عند مغادرتها
   document.querySelector('.bar').classList.toggle('mini', tab !== 'count');
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   ['count', 'report', 'products', 'reports', 'settings'].forEach(t => { $('tab-' + t).hidden = t !== tab; });
