@@ -107,7 +107,7 @@ async function boot() {
     return;
   }
   if (store.getMeta('priceIncludesTax', false) !== true) await store.setMeta('priceIncludesTax', true);   // أسعار الشراء شاملة الضريبة دائماً
-  applyFont(store.getMeta('fontSize', 19));
+  applyFont(store.getMeta('fontSize', 19)); applyTheme(store.getMeta('theme', 'light')); markTheme();
   FX.on = store.getMeta('sound', true) !== false;
   refreshHeader();
   showTab('count'); updateBar(); renderFav();
@@ -166,7 +166,7 @@ function showTab(tab) {
   if (tab === 'count') { refreshHeader(); loadRecent(); }
   if (tab === 'report') { renderStats(); loadRecent(); }
   if (tab === 'products') { $('cePanel').hidden = true; loadCe(); loadReport(false); $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
-  if (tab === 'settings') { $('pCount').textContent = nf.format(store.productCount); $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); }
+  if (tab === 'settings') { $('pCount').textContent = nf.format(store.productCount); $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); markTheme(); }
 }
 $('nav').addEventListener('click', async ev => {
   const b = ev.target.closest('button'); if (!b) return;
@@ -718,6 +718,23 @@ $('bulkBtn').addEventListener('click', async () => {
     updateBulk();
   } catch (e) { toast(e.message, 'err'); }
 });
+
+/* ---------- المظهر ---------- */
+const darkMq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+function applyTheme(t) {
+  const dark = t === 'dark' || (t === 'auto' && darkMq && darkMq.matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = dark ? '#12111f' : '#28235d';
+}
+function markTheme() {
+  const cur = store.getMeta('theme', 'light');
+  document.querySelectorAll('#themeSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === cur));
+}
+$('themeSeg').addEventListener('click', async ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  applyTheme(b.dataset.t); await store.setMeta('theme', b.dataset.t); markTheme();
+});
+if (darkMq && darkMq.addEventListener) darkMq.addEventListener('change', () => applyTheme(store.getMeta('theme', 'light')));
 
 /* ---------- حجم الخط ---------- */
 function applyFont(px) { document.documentElement.style.fontSize = (Number(px) || 19) + 'px'; }
