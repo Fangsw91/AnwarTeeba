@@ -64,7 +64,7 @@ document.addEventListener('click', ev => {
   const b = ev.target.closest('button, .filebtn, .result');
   if (!b || b.disabled) return;
   if (b.closest('#nav')) { FX.tab(); FX.buzz(12); }
-  else if (b.id === 'addBtn' || b.id === 'edSave' || b.id === 'nfAdd') { /* صوت النجاح عبر الإشعار */ }
+  else if (b.id === 'addBtn' || b.id === 'edSave') { /* صوت النجاح عبر الإشعار */ }
   else { FX.tap(); FX.buzz(8); }
   // تموّج الضغط
   const r = b.getBoundingClientRect();
@@ -184,7 +184,7 @@ $('nameSave').addEventListener('click', async () => {
 
 /* ---------- البحث والمسح ---------- */
 function hideAll() {
-  $('results').hidden = true; $('product').hidden = true; $('notfound').hidden = true;
+  $('results').hidden = true; $('product').hidden = true;
   current = null;
   renderFav();
 }
@@ -195,7 +195,7 @@ function renderFav() {
 }
 function favVis(has) {
   if (has === undefined) has = $('favChips').children.length > 0;
-  $('fav').hidden = !has || !$('results').hidden || !$('product').hidden || !$('notfound').hidden;
+  $('fav').hidden = !has || !$('results').hidden || !$('product').hidden;
 }
 $('favChips').addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b) return;
@@ -318,14 +318,13 @@ function saveEdit() {
 $('edPrice').addEventListener('change', saveEdit);
 $('edPrice').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); saveEdit(); $('edPrice').blur(); } });
 
-function showNotFound(text) {
+function showNotFound() {
   hideAll();
-  const looksCode = /^[\w-]{6,}$/.test(text) && /\d/.test(text);
-  $('nfBarcode').value = looksCode ? text : '';
-  $('nfName').value = looksCode ? '' : text;
-  $('nfUnit').value = 'حبة';
-  $('notfound').hidden = false; favVis();
-  $('nfName').focus();
+  const box = $('toast'), el = document.createElement('div');
+  el.className = 'err'; el.textContent = 'هذا الصنف غير موجود';
+  FX.err(); FX.buzz([40, 40, 40]);
+  box.appendChild(el); setTimeout(() => el.remove(), 2000);
+  $('q').focus(); $('q').select();
 }
 
 $('searchForm').addEventListener('submit', ev => {
@@ -400,15 +399,6 @@ async function addCurrent() {
   } catch (e) { toast(e.message, 'err'); }
   finally { adding = false; $('addBtn').disabled = false; }
 }
-
-$('nfCancel').addEventListener('click', () => { hideAll(); $('q').value = ''; $('q').focus(); });
-$('nfAdd').addEventListener('click', async () => {
-  try {
-    const p = await store.addProduct({ barcode: $('nfBarcode').value, name: $('nfName').value, unit: $('nfUnit').value });
-    refreshHeader();
-    selectProduct(store.getProduct(p.id));
-  } catch (e) { toast(e.message, 'err'); }
-});
 
 /* ---------- آخر ما سجّلته ---------- */
 const hhmm = ts => new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
