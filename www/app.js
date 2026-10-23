@@ -278,8 +278,8 @@ $('edUnits').addEventListener('click', ev => { if (pickUnit($('edUnits'), ev)) {
 function fillEdit() {
   renderUnits($('edUnits'), current.unit); $('qty').placeholder = 'الكمية (' + current.unit + ')';
   $('edPriceLbl').textContent = 'سعر الشراء للوحدة (شامل الضريبة)';
-  $('edPrice').value = '';
-  $('edPrice').placeholder = current.cost > 0 ? 'السعر الحالي: ' + pf.format(current.cost) : 'السعر';
+  $('edPrice').value = current.cost > 0 ? String(current.cost) : '';
+  $('edPrice').placeholder = 'السعر';
   $('edTax').innerHTML = '<option value=""></option>' + TAX_CHIPS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
   $('edTax').value = '';
   $('savedMark').textContent = '';
