@@ -36,6 +36,7 @@
 <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></symbol>
 <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
 <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
 <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/></symbol>
 </defs></svg>
 <div id="loading">
@@ -181,68 +182,6 @@
 
       </div>
     </details>
-    <details class="acc">
-      <summary><svg class="ic"><use href="#i-file"/></svg><span>إصدار تقرير</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
-      <div class="acc-body">
-      <div class="stack">
-      <label class="field">نوع التقرير
-        <select id="repType">
-          <option value="full">تقرير الجرد الشامل</option>
-          <option value="tax">تقرير فئات الضريبة</option>
-          <option value="diff" data-book>تقرير الفروقات</option>
-          <option value="uncounted">الأصناف غير المعدودة</option>
-        </select>
-      </label>
-      <label class="field" id="repRateBox" hidden>الفئة
-        <select id="repRate">
-          <option value="all">كل الفئات</option>
-          <option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option>
-        </select>
-      </label>
-      <div class="seg" id="repFmt">
-        <button type="button" data-f="xlsx" class="on"><svg class="ic"><use href="#i-sheet"/></svg>إكسل</button>
-        <button type="button" data-f="pdf"><svg class="ic"><use href="#i-file"/></svg>PDF</button>
-      </div>
-      <button class="btn block" id="repBtn"><svg class="ic"><use href="#i-download"/></svg>إصدار التقرير</button>
-      <div class="progress-note" id="repNote"></div>
-      </div>
-      </div>
-    </details>
-    <details class="acc">
-      <summary><svg class="ic"><use href="#i-merge"/></svg><span>نسخة الجرد والدمج</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
-      <div class="acc-body">
-      <div class="stack">
-      <button class="btn ghost block" id="exportBtn"><svg class="ic"><use href="#i-upload"/></svg>تصدير نسخة الجرد</button>
-      <div class="field">دمج ملفات من أجهزة أخرى
-        <label class="filebtn"><input type="file" id="mergeFiles" multiple><span class="btn ghost">اختيار الملفات</span></label>
-        <span class="note" id="mergeFileName">لم يُختر أي ملف</span>
-      </div>
-      <button class="btn ghost block" id="mergeBtn"><svg class="ic"><use href="#i-merge"/></svg>دمج الملفات المختارة</button>
-      <div id="mergeRes" class="note pre"></div>
-      </div>
-      </div>
-    </details>
-    <details class="acc">
-      <summary><svg class="ic"><use href="#i-list"/></svg><span>قائمة الأصناف</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
-      <div class="acc-body">
-      <div class="filters">
-        <select id="fFilter">
-          <option value="all">كل الأصناف</option>
-          <option value="diff" data-book>فيها فرق</option>
-          <option value="uncounted">لم تُعدّ بعد</option>
-          <option value="counted">معدودة (الأعلى قيمة أولاً)</option>
-        </select>
-        <select id="fTax">
-          <option value="all">كل فئات الضريبة</option><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option><option value="none">غير محدد</option>
-        </select>
-        <input id="fQ" placeholder="بحث بالاسم أو الباركود">
-      </div>
-      <div class="note" id="fTotal"></div>
-      <div id="rows"></div>
-      <button class="btn ghost block" id="more" hidden style="margin-top:10px">عرض المزيد</button>
-
-      </div>
-    </details>
   </section>
 
   <!-- ===== الأصناف ===== -->
@@ -273,6 +212,41 @@
     </div>
 
     <div class="card stack">
+      <h3 class="h-ic"><svg class="ic"><use href="#i-percent"/></svg>تحديد الضريبة للأصناف</h3>
+      <input id="bulkQ" placeholder="كلمة البحث (مثال: المراعي)">
+      <div class="note" id="bulkCount"></div>
+      <select id="bulkTax"><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option></select>
+      <button class="btn block" id="bulkBtn"><svg class="ic"><use href="#i-percent"/></svg>تطبيق على الأصناف المطابقة</button>
+      <div id="bulkRes" class="note"></div>
+      <div class="note" id="taxUnset"></div>
+    </div>
+
+    <details class="acc" open>
+      <summary><svg class="ic"><use href="#i-list"/></svg><span>قائمة الأصناف</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+      <div class="acc-body">
+      <div class="filters">
+        <select id="fFilter">
+          <option value="all">كل الأصناف</option>
+          <option value="diff" data-book>فيها فرق</option>
+          <option value="uncounted">لم تُعدّ بعد</option>
+          <option value="counted">معدودة (الأعلى قيمة أولاً)</option>
+        </select>
+        <select id="fTax">
+          <option value="all">كل فئات الضريبة</option><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option><option value="none">غير محدد</option>
+        </select>
+        <input id="fQ" placeholder="بحث بالاسم أو الباركود">
+      </div>
+      <div class="note" id="fTotal"></div>
+      <div id="rows"></div>
+      <button class="btn ghost block" id="more" hidden style="margin-top:10px">عرض المزيد</button>
+
+      </div>
+    </details>
+  </section>
+
+  <!-- ===== التقارير ===== -->
+  <section id="tab-reports" class="grid" hidden>
+    <div class="card stack">
       <h3 class="h-ic"><svg class="ic"><use href="#i-upload"/></svg>استيراد الأصناف من ملف</h3>
 <label class="filebtn"><input type="file" id="file" accept=".xls,.xlsx,.csv,.txt,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><span class="btn ghost">اختيار ملف</span></label>
       <div class="note" id="fileName">لم يُختر أي ملف</div>
@@ -282,15 +256,48 @@
       <button class="btn ghost block" id="sampleBtn"><svg class="ic"><use href="#i-plus"/></svg>إضافة أصناف تجريبية</button>
     </div>
   
-    <div class="card stack">
-      <h3 class="h-ic"><svg class="ic"><use href="#i-percent"/></svg>تحديد الضريبة للأصناف</h3>
-      <input id="bulkQ" placeholder="كلمة البحث (مثال: المراعي)">
-      <div class="note" id="bulkCount"></div>
-      <select id="bulkTax"><option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option></select>
-      <button class="btn block" id="bulkBtn"><svg class="ic"><use href="#i-percent"/></svg>تطبيق على الأصناف المطابقة</button>
-      <div id="bulkRes" class="note"></div>
-      <div class="note" id="taxUnset"></div>
-    </div>
+    <details class="acc" open>
+      <summary><svg class="ic"><use href="#i-file"/></svg><span>إصدار تقرير</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+      <div class="acc-body">
+      <div class="stack">
+      <label class="field">نوع التقرير
+        <select id="repType">
+          <option value="full">تقرير الجرد الشامل</option>
+          <option value="tax">تقرير فئات الضريبة</option>
+          <option value="diff" data-book>تقرير الفروقات</option>
+          <option value="uncounted">الأصناف غير المعدودة</option>
+          <option value="income">تقرير ضريبة الدخل</option>
+        </select>
+      </label>
+      <label class="field" id="repRateBox" hidden>الفئة
+        <select id="repRate">
+          <option value="all">كل الفئات</option>
+          <option value="0">0%</option><option value="1">1%</option><option value="2">2%</option><option value="4">4%</option><option value="5">5%</option><option value="10">10%</option><option value="16">16%</option>
+        </select>
+      </label>
+      <div class="seg" id="repFmt">
+        <button type="button" data-f="xlsx" class="on"><svg class="ic"><use href="#i-sheet"/></svg>إكسل</button>
+        <button type="button" data-f="pdf"><svg class="ic"><use href="#i-file"/></svg>PDF</button>
+      </div>
+      <button class="btn block" id="repBtn"><svg class="ic"><use href="#i-download"/></svg>إصدار التقرير</button>
+      <div class="progress-note" id="repNote"></div>
+      </div>
+      </div>
+    </details>
+    <details class="acc" open>
+      <summary><svg class="ic"><use href="#i-merge"/></svg><span>نسخة الجرد والدمج</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+      <div class="acc-body">
+      <div class="stack">
+      <button class="btn ghost block" id="exportBtn"><svg class="ic"><use href="#i-upload"/></svg>تصدير نسخة الجرد</button>
+      <div class="field">دمج ملفات من أجهزة أخرى
+        <label class="filebtn"><input type="file" id="mergeFiles" multiple><span class="btn ghost">اختيار الملفات</span></label>
+        <span class="note" id="mergeFileName">لم يُختر أي ملف</span>
+      </div>
+      <button class="btn ghost block" id="mergeBtn"><svg class="ic"><use href="#i-merge"/></svg>دمج الملفات المختارة</button>
+      <div id="mergeRes" class="note pre"></div>
+      </div>
+      </div>
+    </details>
   </section>
 
   <!-- ===== الإعدادات ===== -->
@@ -340,6 +347,7 @@
   <button data-tab="count" class="on"><i><svg class="ic"><use href="#i-scan"/></svg></i>الجرد</button>
   <button data-tab="report"><i><svg class="ic"><use href="#i-chart"/></svg></i>النتائج</button>
   <button data-tab="products"><i><svg class="ic"><use href="#i-box"/></svg></i>الأصناف</button>
+  <button data-tab="reports"><i><svg class="ic"><use href="#i-file"/></svg></i>التقارير</button>
   <button data-tab="settings"><i><svg class="ic"><use href="#i-gear"/></svg></i>الإعدادات</button>
 </nav>
 
@@ -355,6 +363,18 @@
     <div class="cf-msg" id="cfMsg"></div>
     <div class="cf-btns"><button type="button" class="btn danger" id="cfYes"><svg class="ic"><use href="#i-check"/></svg>تأكيد</button><button type="button" class="btn" id="cfAlt" hidden></button><button type="button" class="btn ghost" id="cfNo"><svg class="ic"><use href="#i-x"/></svg>تراجع</button></div>
   </div>
+</div>
+
+<div id="lock" hidden>
+  <form class="cf-box" id="lockForm" autocomplete="off">
+    <div class="lock-ic"><svg class="ic"><use href="#i-lock"/></svg></div>
+    <div class="cf-msg">أدخل كلمة السر لفتح الإعدادات</div>
+    <input id="lockInput" type="password" autocomplete="off" placeholder="كلمة السر">
+    <div class="cf-btns">
+      <button type="submit" class="btn" id="lockOk"><svg class="ic"><use href="#i-check"/></svg>فتح</button>
+      <button type="button" class="btn ghost" id="lockNo"><svg class="ic"><use href="#i-x"/></svg>إلغاء</button>
+    </div>
+  </form>
 </div>
 
 <div id="toast"></div>

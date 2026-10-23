@@ -33,7 +33,12 @@
       diffValueGross: { title: 'قيمة الفرق بعد الضريبة', mm: 27, xl: 16, kind: 'money', get: i => i.diffValueGross, sum: 'diffValueGross', signed: true },
     };
     let keys;
-    if (t === 'uncounted') keys = ['idx', 'name', 'barcode', 'unit', 'tax', ...(book ? ['system'] : []), 'price'];
+    if (t === 'income') {
+      c.qty = { ...c.qty, title: 'العدد', mm: 30, xl: 14 };
+      c.price = { ...c.price, title: 'سعر الإفرادي', mm: 40, xl: 16 };
+      c.base = { ...c.base, title: 'الإجمالي قبل الضريبة', mm: 50, xl: 20 };
+      keys = ['idx', 'name', 'qty', 'price', 'base'];
+    } else if (t === 'uncounted') keys = ['idx', 'name', 'barcode', 'unit', 'tax', ...(book ? ['system'] : []), 'price'];
     else if (t === 'diff') keys = ['idx', 'name', 'barcode', 'unit', 'tax', 'system', 'qty', 'diff', 'price', 'diffValue', 'diffValueGross'];
     else keys = ['idx', 'name', 'barcode', 'unit', 'tax', 'qty', ...(book ? ['system', 'diff'] : []), 'price', 'base', 'taxAmount', 'gross'];
     return keys.map(k => c[k]);
@@ -43,6 +48,9 @@
     const s = pack.stats;
     if (pack.type === 'tax' && pack.sel) {
       return [['عدد الأصناف', fq(pack.sel.items)], ['القيمة قبل الضريبة', f2(pack.sel.base)], ['مبلغ الضريبة', f2(pack.sel.taxAmount)], ['القيمة بعد الضريبة', f2(pack.sel.gross)]];
+    }
+    if (pack.type === 'income') {
+      return [['عدد الأصناف', fq(s.items)], ['الإجمالي قبل الضريبة', f2(s.value)]];
     }
     if (pack.type === 'diff') {
       return [
@@ -77,7 +85,7 @@
     return out;
   };
   const metaLine = pack => `${pack.day}  ${pack.date}      الوقت: ${pack.time}`;
-  const priceNote = pack => (pack.includesTax ? 'أسعار الشراء في الملف شاملة الضريبة' : 'أسعار الشراء في الملف غير شاملة الضريبة');
+  const priceNote = pack => pack.type === 'income' ? 'الأسعار والإجماليات قبل الضريبة' : (pack.includesTax ? 'أسعار الشراء في الملف شاملة الضريبة' : 'أسعار الشراء في الملف غير شاملة الضريبة');
 
   const toBytes = b => (b instanceof Uint8Array ? b : new Uint8Array(b));
 

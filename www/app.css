@@ -360,3 +360,15 @@ html:has(.bar.mini) { scroll-padding-top: 4rem; }
 }
 
 .unitchips button { min-width: 70px; }
+
+/* ---------- قفل الإعدادات ---------- */
+#lock { position: fixed; inset: 0; z-index: 95; background: rgba(20,18,50,.6); display: grid; place-items: center; padding: 20px; animation: fadeIn .2s ease both; }
+#lock .cf-box { width: 100%; max-width: 380px; background: #fff; border-radius: 18px; padding: 22px; display: grid; gap: 14px; box-shadow: 0 20px 50px rgba(0,0,0,.35); border-top: 5px solid var(--brand); animation: slideUp .28s cubic-bezier(.2,.9,.3,1.2) both; }
+#lock .cf-box.shake { animation: shake .4s ease; }
+#lock .cf-msg { font-size: 1.1rem; font-weight: 700; text-align: center; }
+#lock .cf-btns { display: grid; gap: 10px; }
+.lock-ic { width: 3.2rem; height: 3.2rem; margin: 0 auto; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; }
+.lock-ic .ic { width: 1.6rem; height: 1.6rem; }
+#lockInput { text-align: center; letter-spacing: .15em; direction: ltr; }
+.nav button { min-width: 0; }
+.nav button { font-size: min(.75rem, 3.3vw); padding-left: 2px; padding-right: 2px; white-space: nowrap; }
