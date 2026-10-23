@@ -165,8 +165,7 @@ function showTab(tab) {
   if (tab === 'count') { refreshHeader(); loadRecent(); }
   if (tab === 'report') { renderStats(); renderTaxTable(); loadRecent(); }
   if (tab === 'products') { $('cePanel').hidden = true; loadCe(); loadReport(false); $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
-  if (tab === 'reports') { $('pCount').textContent = nf.format(store.productCount); }
-  if (tab === 'settings') { $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); }
+  if (tab === 'settings') { $('pCount').textContent = nf.format(store.productCount); $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); }
 }
 $('nav').addEventListener('click', async ev => {
   const b = ev.target.closest('button'); if (!b) return;

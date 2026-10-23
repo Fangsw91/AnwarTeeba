@@ -246,16 +246,6 @@
 
   <!-- ===== التقارير ===== -->
   <section id="tab-reports" class="grid" hidden>
-    <div class="card stack">
-      <h3 class="h-ic"><svg class="ic"><use href="#i-upload"/></svg>استيراد الأصناف من ملف</h3>
-<label class="filebtn"><input type="file" id="file" accept=".xls,.xlsx,.csv,.txt,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><span class="btn ghost">اختيار ملف</span></label>
-      <div class="note" id="fileName">لم يُختر أي ملف</div>
-      <button class="btn block" id="importBtn"><svg class="ic"><use href="#i-upload"/></svg>استيراد</button>
-      <div id="importRes" class="note pre"></div>
-      <div class="note">عدد الأصناف الحالي: <b id="pCount">0</b></div>
-      <button class="btn ghost block" id="sampleBtn"><svg class="ic"><use href="#i-plus"/></svg>إضافة أصناف تجريبية</button>
-    </div>
-  
     <details class="acc" open>
       <summary><svg class="ic"><use href="#i-file"/></svg><span>إصدار تقرير</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
       <div class="acc-body">
@@ -302,6 +292,16 @@
 
   <!-- ===== الإعدادات ===== -->
   <section id="tab-settings" class="grid" hidden>
+    <div class="card stack">
+      <h3 class="h-ic"><svg class="ic"><use href="#i-upload"/></svg>استيراد الأصناف من ملف</h3>
+<label class="filebtn"><input type="file" id="file" accept=".xls,.xlsx,.csv,.txt,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><span class="btn ghost">اختيار ملف</span></label>
+      <div class="note" id="fileName">لم يُختر أي ملف</div>
+      <button class="btn block" id="importBtn"><svg class="ic"><use href="#i-upload"/></svg>استيراد</button>
+      <div id="importRes" class="note pre"></div>
+      <div class="note">عدد الأصناف الحالي: <b id="pCount">0</b></div>
+      <button class="btn ghost block" id="sampleBtn"><svg class="ic"><use href="#i-plus"/></svg>إضافة أصناف تجريبية</button>
+    </div>
+  
     <div class="card stack">
       <h3 class="h-ic"><svg class="ic"><use href="#i-user"/></svg>هذا الجهاز</h3>
       <label class="field">اسمك / اسم الجهاز
