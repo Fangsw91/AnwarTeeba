@@ -92,7 +92,7 @@
       <div class="muted" id="pMeta"></div>
       <div class="prevnote" id="prevNote" hidden></div>
       <div class="priceline" hidden><span id="pPrice"></span></div>
-      <div class="quickedit">
+      <div class="quickedit" id="step1">
         <label class="field"><span id="edPriceLbl">سعر الشراء للوحدة</span>
           <input id="edPrice" type="number" inputmode="decimal" step="any" min="0">
         </label>
@@ -100,12 +100,13 @@
           <div class="taxchips" id="edChips"></div>
         </div>
         <select id="edTax" hidden><option value=""></option></select>
+        <div class="field unitrow">الوحدة
+          <div class="taxchips unitchips" id="edUnits"></div>
+        </div>
         <div class="savedmark" id="savedMark"></div>
       </div>
       <div id="step2" hidden>
-      <div class="field unitrow">الوحدة
-        <div class="taxchips unitchips" id="edUnits"></div>
-      </div>
+      <div class="sumline"><span id="sumTxt"></span><button type="button" class="editbtn" id="editPT" aria-label="تعديل السعر والضريبة والوحدة"><svg class="ic"><use href="#i-pencil"/></svg></button></div>
       <div class="qty-row">
         <button type="button" class="btn ghost round" id="minus" aria-label="إنقاص"><svg class="ic"><use href="#i-minus"/></svg></button>
         <input id="qty" type="number" inputmode="decimal" step="any" min="0" placeholder="الكمية">
@@ -151,10 +152,6 @@
 
     <div class="kpis">
       <div class="kpi"><span>عمليات العدّ</span><b id="entries">0</b></div>
-      <div class="kpi"><span>أصناف مضافة</span><b id="newItems">0</b></div>
-      <div class="kpi"><span>المعدود قبل الضريبة</span><b id="value">0.00</b></div>
-      <div class="kpi"><span>المعدود بعد الضريبة</span><b id="valueG">0.00</b></div>
-      <div class="kpi"><span>مبلغ الضريبة</span><b id="taxAmt">0.00</b></div>
       <div class="kpi" data-book><span>أصناف فيها فرق</span><b id="diffs">0</b></div>
       <div class="kpi" data-book><span>النقص قبل الضريبة</span><b class="neg" id="short">0.00</b></div>
       <div class="kpi" data-book><span>النقص بعد الضريبة</span><b class="neg" id="shortG">0.00</b></div>
@@ -171,19 +168,6 @@
       <div class="muted" id="recentEmpty">لا توجد عمليات بعد.</div>
       <button type="button" class="rc-toggle" id="recentToggle" hidden><span id="recentToggleTxt">عرض الباقي</span><svg class="ic chev"><use href="#i-chevron"/></svg></button>
     </section>
-    <details class="acc">
-      <summary><svg class="ic"><use href="#i-percent"/></svg><span>فئات الضريبة</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
-      <div class="acc-body">
-      <div class="tablewrap">
-        <table id="taxTable">
-          <thead><tr><th>الفئة (معدود/كل)</th><th>قبل</th><th>الضريبة</th><th>بعد</th></tr></thead>
-          <tbody id="taxRows"></tbody>
-        </table>
-      </div>
-      <div class="note" id="taxNote"></div>
-
-      </div>
-    </details>
   </section>
 
   <!-- ===== الأصناف ===== -->

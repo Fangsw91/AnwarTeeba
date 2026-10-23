@@ -372,3 +372,6 @@ html:has(.bar.mini) { scroll-padding-top: 4rem; }
 #lockInput { text-align: center; letter-spacing: .15em; direction: ltr; }
 .nav button { min-width: 0; }
 .nav button { font-size: min(.75rem, 3.3vw); padding-left: 2px; padding-right: 2px; white-space: nowrap; }
+.sumline { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .55rem .8rem; margin-bottom: .6rem; background: #f3f2fa; border-radius: 12px; font-weight: 700; color: var(--navy, #28235d); }
+.editbtn { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border: 1px solid #d9d7ea; background: #fff; border-radius: 50%; color: inherit; cursor: pointer; position: relative; overflow: hidden; }
+.editbtn .ic { width: 1.1rem; height: 1.1rem; }

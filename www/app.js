@@ -61,7 +61,7 @@ const FX = {
   buzz(ms) { if (this.on && navigator.vibrate) navigator.vibrate(ms); },
 };
 document.addEventListener('click', ev => {
-  const b = ev.target.closest('button, .filebtn, .result, #taxTable tr[data-tax]');
+  const b = ev.target.closest('button, .filebtn, .result');
   if (!b || b.disabled) return;
   if (b.closest('#nav')) { FX.tab(); FX.buzz(12); }
   else if (b.id === 'addBtn' || b.id === 'edSave' || b.id === 'nfAdd') { /* صوت النجاح عبر الإشعار */ }
@@ -164,7 +164,7 @@ function showTab(tab) {
   ['count', 'report', 'products', 'reports', 'settings'].forEach(t => { $('tab-' + t).hidden = t !== tab; });
   if (tab !== 'count') stopScanner();
   if (tab === 'count') { refreshHeader(); loadRecent(); }
-  if (tab === 'report') { renderStats(); renderTaxTable(); loadRecent(); }
+  if (tab === 'report') { renderStats(); loadRecent(); }
   if (tab === 'products') { $('cePanel').hidden = true; loadCe(); loadReport(false); $('pCount').textContent = nf.format(store.productCount); updateBulk(); }
   if (tab === 'settings') { $('pCount').textContent = nf.format(store.productCount); $('setName').value = store.getMeta('deviceName', ''); $('setStocktake').value = stocktakeName(); $('setCompany').value = store.getMeta('companyName', 'أنوار طيبة للتموين'); markFont(); markSound(); }
 }
@@ -268,23 +268,33 @@ function pickUnit(box, ev) { const b = ev.target.closest('button'); if (!b) retu
 const TAX_CHIPS = [['0', '0%'], ['1', '1%'], ['2', '2%'], ['4', '4%'], ['5', '5%'], ['10', '10%'], ['16', '16%']];
 $('edChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v="${v}">${t}</button>`).join('');
 function markChips() { document.querySelectorAll('#edChips button').forEach(b => b.classList.toggle('on', b.dataset.v === $('edTax').value)); }
-$('edChips').addEventListener('click', ev => {
+$('edChips').addEventListener('click', async ev => {
   const b = ev.target.closest('button'); if (!b) return;
-  $('edTax').value = b.dataset.v; markChips(); saveEdit();
-  if ($('step2').hidden) { $('step2').hidden = false; $('qty').placeholder = 'الكمية (' + (unitOf($('edUnits')) || current.unit) + ')'; setTimeout(() => $('qty').focus({ preventScroll: false }), 80); }
+  $('edTax').value = b.dataset.v; markChips();
+  await saveEdit();
+  showStep(true); setTimeout(() => $('qty').focus({ preventScroll: false }), 80);
   updateReady();
 });
 $('edUnits').addEventListener('click', ev => { if (pickUnit($('edUnits'), ev)) { $('qty').placeholder = 'الكمية (' + unitOf($('edUnits')) + ')'; saveEdit(); } });
+function showStep(second) {
+  $('step1').hidden = second; $('step2').hidden = !second;
+  if (second) {
+    const u = unitOf($('edUnits')) || current.unit;
+    $('sumTxt').textContent = `السعر ${current.cost > 0 ? pf.format(current.cost) : '—'} · ${taxTxt(current.tax)} · ${u}`;
+    $('qty').placeholder = 'الكمية (' + u + ')';
+  }
+}
+$('editPT').addEventListener('click', () => { showStep(false); updateReady(); });
 function fillEdit() {
   renderUnits($('edUnits'), current.unit); $('qty').placeholder = 'الكمية (' + current.unit + ')';
   $('edPriceLbl').textContent = 'سعر الشراء للوحدة (شامل الضريبة)';
   $('edPrice').value = current.cost > 0 ? String(current.cost) : '';
   $('edPrice').placeholder = 'السعر';
   $('edTax').innerHTML = '<option value=""></option>' + TAX_CHIPS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
-  $('edTax').value = '';
+  $('edTax').value = current.tax == null ? '' : String(current.tax);
   $('savedMark').textContent = '';
-  $('step2').hidden = true;
   markChips();
+  showStep(current.tax != null);
 }
 let savingEdit = Promise.resolve();
 function saveEdit() {
@@ -373,9 +383,9 @@ async function addCurrent() {
     // صنف معدود سابقاً
     let replace = false;
     if (cp.counted > 0) {
-      const ch = await askConfirm(`هذا الصنف معدود سابقاً: ${nf.format(cp.counted)} ${cp.unit}.\nالكمية الجديدة: ${nf.format(qty)}`, `إضافة (المجموع ${nf.format(Math.round((cp.counted + qty) * 1000) / 1000)})`, 'استبدال بالكمية الجديدة');
+      const ch = await askConfirm(`هذا الصنف معدود سابقاً: ${nf.format(cp.counted)} ${cp.unit}.\nالكمية الجديدة: ${nf.format(qty)}`, `إضافة (المجموع ${nf.format(Math.round((cp.counted + qty) * 1000) / 1000)})`);
       if (ch === false) { adding = false; $('addBtn').disabled = false; return; }
-      replace = ch === 'alt';
+      replace = false;
     }
     await saveEdit();
     const p = current;
@@ -426,7 +436,7 @@ async function onRecentClick(ev) {
   const b = ev.target.closest('.x');
   if (!b) return;
   if (!(await askConfirm(`إلغاء هذا العدّ؟\n${b.dataset.name} — ${b.dataset.q}`, 'نعم، إلغاء'))) return;
-  try { await store.undoCount(+b.dataset.id); toast('تم الإلغاء'); loadRecent(); renderStats(); renderTaxTable(); loadReport(false); }
+  try { await store.undoCount(+b.dataset.id); toast('تم الإلغاء'); loadRecent(); renderStats(); loadReport(false); }
   catch (e) { toast(e.message, 'err'); }
 }
 $('recent').addEventListener('click', onRecentClick);
@@ -539,10 +549,6 @@ function renderStats() {
   $('items').textContent = nf.format(s.items);
   $('products').textContent = nf.format(s.products);
   $('entries').textContent = nf.format(s.entries);
-  $('newItems').textContent = nf.format(s.newItems);
-  $('value').textContent = mf.format(s.value);
-  $('valueG').textContent = mf.format(s.valueG);
-  $('taxAmt').textContent = mf.format(s.tax);
   $('diffs').textContent = nf.format(s.diffs);
   $('short').textContent = mf.format(s.short); $('shortG').textContent = mf.format(s.shortG);
   $('surplus').textContent = mf.format(s.surplus); $('surplusG').textContent = mf.format(s.surplusG);
@@ -551,26 +557,6 @@ function renderStats() {
   if (!hasBook && $('fFilter').value === 'diff') $('fFilter').value = 'all';
 }
 
-function renderTaxTable() {
-  const r = store.taxReport();
-  const row = c => `<tr data-tax="${c.tax === null ? 'none' : c.tax}"><td>${c.tax === null ? 'غير محدد*' : c.tax + '%'}<br><small>${nf.format(c.items)}/${nf.format(c.products)}</small></td>
-    <td>${mf.format(c.base)}</td><td>${mf.format(c.taxAmount)}</td><td>${mf.format(c.gross)}</td></tr>`;
-  const unset = r.cats[r.cats.length - 1];
-  const cats = r.cats.filter(c => c.tax !== null || c.products > 0);
-  const t = r.total;
-  $('taxRows').innerHTML = cats.map(row).join('') +
-    `<tr class="tot"><td>المجموع<br><small>${nf.format(t.items)}/${nf.format(t.products)}</small></td><td>${mf.format(t.base)}</td><td>${mf.format(t.taxAmount)}</td><td>${mf.format(t.gross)}</td></tr>`;
-  $('taxNote').textContent = (unset.products ? `* ${nf.format(unset.products)} صنف بلا ضريبة محددة (تُحتسب 0%). ` : '') +
-    'الأسعار ' + (r.includesTax ? 'شاملة الضريبة.' : 'غير شاملة الضريبة.');
-}
-$('taxRows').addEventListener('click', ev => {
-  const tr = ev.target.closest('tr[data-tax]');
-  if (!tr) return;
-  $('fTax').value = tr.dataset.tax;
-  $('fFilter').value = 'counted';
-  loadReport(false);
-  $('rows').scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
 let reportOffset = 0;
 function loadReport(append) {
   if (!append) reportOffset = 0;
