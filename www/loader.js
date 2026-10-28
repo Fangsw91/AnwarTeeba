@@ -23,7 +23,7 @@
     function render(t) {                       // t بالثواني
       const k = back(t / .6);
       card.setAttribute('transform', `translate(128 128) scale(${0.82 + 0.18 * clamp(k)}) translate(-128 -128)`);
-      disc.setAttribute('r', 104 * Math.min(1.04, back((t - .1) / .6)));
+      disc.setAttribute('r', Math.max(0, 104 * Math.min(1.04, back((t - .1) / .6))));
       sun.setAttribute('transform', `translate(0 ${(1 - ease((t - .5) / .8)) * 52})`);
       const sweep = t > 2.0 ? ((t - 2.0) % 1.5) / 1.5 : -1;          // مسح متكرر
       const sx = 40 + (sweep < 0 ? 0 : sweep) * 176;
