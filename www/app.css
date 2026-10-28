@@ -225,6 +225,7 @@ main > *, .grid > *, .card { min-width: 0; max-width: 100%; }
 #loading .ld-name { font-size: 1.8rem; font-weight: 700; }
 #loading .ld-bar { width: 58%; max-width: 260px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.2); overflow: hidden; }
 #loading .ld-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; animation: ld 4s linear forwards; }
+#loading .ld-ver { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; font-size: .7rem; opacity: .6; direction: rtl; }
 #loading .ld-text { font-size: 1rem; opacity: .9; min-height: 1.6em; }
 @keyframes ld { to { width: 100%; } }
 

@@ -11,3 +11,5 @@ const out = 'window.InvAssets={logo:"' + b64(path.join(root, 'www/logo.png')) + 
   b64(path.join(fd, '400Regular/NotoNaskhArabic_400Regular.ttf')) + '",bold:"' +
   b64(path.join(fd, '700Bold/NotoNaskhArabic_700Bold.ttf')) + '"}};';
 fs.writeFileSync(path.join(v, 'report-assets.js'), out);
+
+fs.writeFileSync(path.join(root, 'www/version.js'), 'window.JARD_VERSION="' + require(path.join(root, 'package.json')).version + '";\n');
