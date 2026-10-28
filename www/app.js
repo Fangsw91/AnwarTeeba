@@ -635,6 +635,37 @@ $('mergeBtn').addEventListener('click', async () => {
   renderStats(); loadReport(false); refreshHeader();
 });
 
+
+/* ---------- ملف تعريف الضرائب ---------- */
+$('tdExport').addEventListener('click', async () => {
+  const { text, count } = store.exportTaxDefsCsv();
+  if (!count) { toast('لا توجد أصناف محدّدة الضريبة لإصدارها', 'err'); return; }
+  const day = new Date().toISOString().slice(0, 10);
+  const name = `jard-tax-${day}.csv`;
+  try {
+    if (window.NativeFiles && NativeFiles.isNative()) await NativeFiles.save(name, text);
+    else downloadBlob(name, text);
+    toast(`أُصدر ملف تعريف الضرائب (${nf.format(count)} صنف)`, 'ok');
+  } catch (e) {
+    if (!/cancel/i.test(String(e && e.message))) toast('تعذّر الإصدار: ' + (e.message || e), 'err');
+  }
+});
+$('tdFile').addEventListener('change', () => { const f = $('tdFile').files[0]; $('tdFileName').textContent = f ? f.name : 'لم يُختر أي ملف'; });
+$('tdImport').addEventListener('click', async () => {
+  const f = $('tdFile').files[0];
+  if (!f) { toast('لم يُختر أي ملف', 'err'); return; }
+  try {
+    const r = await store.importTaxDefs(Inv.csv.decodeBuffer(await f.arrayBuffer()));
+    $('tdRes').textContent = `✓ عُرّفت ضريبة ${nf.format(r.total)} صنف` + (r.taxes ? ` (تغيّرت نسبة ${nf.format(r.taxes)} منها)` : '') +
+      (r.prices ? `\nأُضيف سعر ${nf.format(r.prices)} صنف كان بلا سعر` : '') +
+      (r.missing ? `\nلم يُعثر على ${nf.format(r.missing)} صنف في هذا الجهاز` : '') +
+      (r.invalid ? `\nتُجوهل ${nf.format(r.invalid)} سطر بنسبة ضريبة غير صحيحة` : '');
+    toast('تم استيراد نسب الضريبة', 'ok');
+    $('tdFile').value = ''; $('tdFileName').textContent = 'لم يُختر أي ملف';
+    renderStats(); loadReport(false); refreshHeader();
+  } catch (e) { $('tdRes').textContent = '✗ ' + e.message; toast(e.message, 'err'); }
+});
+
 /* ---------- الأصناف ---------- */
 function showImport(r) {
   let t = `تم: ${nf.format(r.inserted)} صنف جديد، ${nf.format(r.updated)} محدّث، ${nf.format(r.skipped)} متجاهَل.`;

@@ -618,6 +618,43 @@
       return stringify(rows);
     }
 
+
+    /* ---------- ملف تعريف الضرائب (يُصدَّر من جهاز ويُستورد في أجهزة أخرى) ---------- */
+    const TAXDEF_HEAD = ['كود الصنف', 'اسم الصنف', 'السعر شامل الضريبة', 'نسبة الضريبة'];
+    function exportTaxDefsCsv() {
+      const list = [...S.products.values()].filter(p => p.tax != null).sort((a, b) => (a._n < b._n ? -1 : a._n > b._n ? 1 : 0));
+      const rows = [TAXDEF_HEAD];
+      for (const p of list) rows.push([p.barcode ? '="' + p.barcode + '"' : '', safeText(p.name), r6(money(p).gross), p.tax]);
+      return { text: stringify(rows), count: list.length };
+    }
+    async function importTaxDefs(text) {
+      const rows = parse(text);
+      const head = (rows[0] || []).map(h => String(h).trim());
+      const ic = head.indexOf('كود الصنف'), inm = head.indexOf('اسم الصنف'), ip = head.indexOf('السعر شامل الضريبة'), it = head.indexOf('نسبة الضريبة');
+      if (ic < 0 || it < 0 || inm < 0) throw new Error('هذا الملف ليس ملف تعريف ضرائب مُصدَّر من التطبيق');
+      const touched = new Set(), res = { taxes: 0, prices: 0, missing: 0, invalid: 0 };
+      const olds = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i]; if (!r || !r.length) continue;
+        const code = cleanBarcode(r[ic]), name = String(r[inm] || '').trim();
+        const rawRate = String(r[it] == null ? '' : r[it]).trim();
+        const rate = rawRate === '' ? null : parseNumber(rawRate);
+        if (rate === null || !TAX_RATES.includes(rate)) { res.invalid++; continue; }
+        const p = code ? S.byBarcode.get(bkey(code)) : S.noCode.get(norm(name));
+        if (!p) { res.missing++; continue; }
+        if (!touched.has(p)) { olds.push([p, p.tax, p.tm, p.cost, p.pm]); touched.add(p); }
+        if (p.tax !== rate) res.taxes++;
+        p.tax = rate; p.tm = true;
+        const price = ip >= 0 ? parseNumber(r[ip]) : 0;
+        if (price > 0 && !(p.cost > 0)) { p.cost = r6(price); p.pm = true; res.prices++; }
+      }
+      try {
+        await write('products', t => { const st = t.objectStore('products'); touched.forEach(p => st.put(plain(p))); });
+      } catch (e) { olds.forEach(([p, a, b, c, d]) => { p.tax = a; p.tm = b; p.cost = c; p.pm = d; }); throw e; }
+      res.total = touched.size;
+      return res;
+    }
+
     /** يدمج ملف جرد مُصدَّر من جهاز ثاني. دمج ملف جديد من نفس الجهاز يستبدل الدمج السابق (ما بيتضاعف العدّ). */
     async function mergeCsv(text, fallbackLabel) {
       const rows = parse(text);
@@ -699,7 +736,7 @@
     return {
       init, getMeta, setMeta, importProducts, addProduct, lookup, lookupAll, addCount, undoCount, recent,
       getProduct: id => { const x = S.products.get(id); return x ? view(x) : null; },
-      updateProduct, topCounted, ownCount, setOwnCount, bulkSetTax, countMatching, taxReport, exportTaxCsv, reportPack, TAX_RATES,
+      updateProduct, topCounted, ownCount, setOwnCount, bulkSetTax, countMatching, taxReport, exportTaxCsv, exportTaxDefsCsv, importTaxDefs, reportPack, TAX_RATES,
       stats, report, exportCsv, mergeCsv, resetCounts, wipeAll,
       get productCount() { return S.products.size; },
     };

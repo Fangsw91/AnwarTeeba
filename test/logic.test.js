@@ -388,5 +388,27 @@ async function t(name, fn) {
     await assert.rejects(() => X.updateProduct(id, { unit: '  ' }), /الوحدة/);
   });
 
+  console.log('ملف تعريف الضرائب');
+  await t('تصدير من جهاز واستيراد في جهاز آخر', async () => {
+    const A = Inv.createStore(), B = Inv.createStore();
+    await A.init('td-A'); await B.init('td-B');
+    const rows = [['رقم المادة', 'اسم المادة', 'اخر سعر شراء'], ['5001', 'حليب', 1.16], ['5002', 'أرز', 0], ['5003', 'سكر', 2], ['', 'ملح بلا كود', 0.5]];
+    await A.importProducts(rows); await B.importProducts([rows[0], ['5001', 'حليب', 0], ['5002', 'أرز', 3], ['5003', 'سكر', 2], ['', 'ملح بلا كود', 0]]);
+    await A.updateProduct(A.lookup('5001')[0].id, { tax: 16 });
+    await A.updateProduct(A.lookup('5002')[0].id, { tax: 0 });
+    const ns = A.lookupAll('ملح', 5).items[0]; await A.updateProduct(ns.id, { tax: 4 });
+    const { text, count } = A.exportTaxDefsCsv();
+    assert.equal(count, 3);                                   // سكر بلا ضريبة فلا يُصدَّر
+    assert.ok(text.includes('كود الصنف') && text.includes('نسبة الضريبة'));
+    const r = await B.importTaxDefs(text);
+    assert.equal(r.total, 3); assert.equal(r.missing, 0);
+    assert.equal(B.lookup('5001')[0].tax, 16);
+    assert.equal(B.lookup('5002')[0].tax, 0);                 // صفر ضريبة صحيح وليس «غير محدد»
+    assert.equal(B.lookup('5003')[0].tax, null);
+    assert.equal(B.lookup('5001')[0].cost, 1.16);             // كان بلا سعر فأُضيف
+    assert.equal(B.lookup('5002')[0].cost, 3);                // سعره الموجود لا يُستبدل
+    await assert.rejects(() => B.importTaxDefs('a;b\n1;2'), /ليس ملف تعريف/);
+  });
+
   console.log(`\n${passed} اختبار نجح${process.exitCode ? ' — وفي اختبارات فشلت' : ''}`);
 })();

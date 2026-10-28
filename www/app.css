@@ -456,3 +456,13 @@ body { padding-bottom: calc(6.6rem + env(safe-area-inset-bottom)); }
 .empty-ill { width: 120px; height: 90px; color: var(--brand); margin-bottom: 4px; }
 .card.warn.empty { background: var(--card); border-color: var(--line); color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { #okPop.go, #okPop.go svg, #okPop.go path { animation-duration: .01s; } main > section:not([hidden]), #product:not([hidden]) { animation: none; } }
+
+/* قسم ملف تعريف الضرائب: مميز بلون */
+details.taxdef { border: 1.5px solid #1f9d8a; background: linear-gradient(180deg, #effaf7, var(--card)); box-shadow: 0 6px 18px rgba(31,157,138,.16); }
+details.taxdef > summary { background: linear-gradient(135deg, #167a6b, #1f9d8a); color: #fff; border-radius: 12px; }
+details.taxdef > summary .ic, details.taxdef > summary span { color: #fff; }
+details.taxdef .btn:not(.ghost) { background-color: #167a6b; box-shadow: 0 8px 18px rgba(31,157,138,.3), inset 0 1px 0 rgba(255,255,255,.22); }
+details.taxdef .btn.ghost { border-color: #1f9d8a; color: #167a6b; }
+:root[data-theme="dark"] details.taxdef { background: linear-gradient(180deg, #12302b, var(--card)); border-color: #1f9d8a; }
+:root[data-theme="dark"] details.taxdef .btn.ghost { color: #6fdac8; }
+details.taxdef > summary > .ic:first-child { background: rgba(255,255,255,.22); }

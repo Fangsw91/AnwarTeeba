@@ -225,6 +225,21 @@
 
   <!-- ===== التقارير ===== -->
   <section id="tab-reports" class="grid" hidden>
+    <details class="acc taxdef" open>
+      <summary><svg class="ic"><use href="#i-percent"/></svg><span>ملف تعريف الضرائب</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+      <div class="acc-body">
+      <div class="stack">
+      <div class="note">حدّد نسبة الضريبة للأصناف في هذا الجهاز، ثم أصدر الملف واستورده في الأجهزة الأخرى لتتعرّف على نسب الضريبة نفسها. يحتوي الملف على كود الصنف واسمه وسعره شامل الضريبة ونسبة الضريبة.</div>
+      <button class="btn block" id="tdExport"><svg class="ic"><use href="#i-upload"/></svg>إصدار ملف تعريف الضرائب</button>
+      <div class="field">استيراد ملف تعريف الضرائب
+        <label class="filebtn"><input type="file" id="tdFile" accept=".csv,text/csv"><span class="btn ghost">اختيار الملف</span></label>
+        <span class="note" id="tdFileName">لم يُختر أي ملف</span>
+      </div>
+      <button class="btn ghost block" id="tdImport"><svg class="ic"><use href="#i-download"/></svg>استيراد نسب الضريبة</button>
+      <div id="tdRes" class="note pre"></div>
+      </div>
+      </div>
+    </details>
     <details class="acc" open>
       <summary><svg class="ic"><use href="#i-file"/></svg><span>إصدار تقرير</span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
       <div class="acc-body">
