@@ -41,9 +41,9 @@
 <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/></symbol>
 </defs></svg>
 <div id="loading">
-  <img src="icon.png" alt="" width="120" height="120">
+  <div id="ldLogo" aria-hidden="true"></div>
   <div class="ld-name">أنوار طيبة للتموين</div>
-  <div class="ld-bar"><i></i></div>
+  <div class="ld-dots" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="ld-text" id="ldText">جارٍ تحميل الأصناف…</div>
   <div class="ld-ver" id="ldVer"></div>
 </div>
@@ -368,6 +368,7 @@
 <div id="toast"></div>
 
 <script src="version.js"></script>
+<script src="loader.js"></script>
 <script>(function(){var e=document.getElementById("ldVer");if(e&&window.JARD_VERSION)e.textContent="الإصدار "+window.JARD_VERSION;})();</script>
 <script src="vendor/zxing.min.js"></script>
 <script src="native.js"></script>

@@ -221,7 +221,11 @@ main > *, .grid > *, .card { min-width: 0; max-width: 100%; }
 /* ---------- شاشة التحميل ---------- */
 #loading { position: fixed; inset: 0; z-index: 100; background: var(--brand); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; transition: opacity .4s; }
 #loading.out { opacity: 0; pointer-events: none; }
-#loading img { width: 120px; height: 120px; border-radius: 28px; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+#ldLogo { width: 150px; height: 150px; filter: drop-shadow(0 10px 24px rgba(0,0,0,.35)); }
+#loading .ld-dots { display: flex; gap: 10px; height: 20px; align-items: center; }
+#loading .ld-dots i { width: 12px; height: 12px; border-radius: 50%; background: #fff; animation: ldDot 1.05s ease-in-out infinite; }
+#loading .ld-dots i:nth-child(2) { animation-delay: .17s; } #loading .ld-dots i:nth-child(3) { animation-delay: .34s; }
+@keyframes ldDot { 0%, 100% { transform: scale(1); background: #fff; } 45% { transform: scale(1.5); background: var(--accent); } }
 #loading .ld-name { font-size: 1.8rem; font-weight: 700; }
 #loading .ld-bar { width: 58%; max-width: 260px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.2); overflow: hidden; }
 #loading .ld-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; animation: ld 4s linear forwards; }

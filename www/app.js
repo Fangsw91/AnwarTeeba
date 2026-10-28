@@ -95,8 +95,10 @@ const enqueue = fn => (queue = queue.then(fn).catch(e => toast(e.message || 'خ�
 
 /* ---------- الإقلاع ---------- */
 const LOAD_STEPS = ['جارٍ تحميل الأصناف…', 'جارٍ تجهيز الباركود والأسعار…', 'جارٍ تجهيز الضرائب والتقارير…', 'اكتمل التحميل'];
+let ldAnim = null;
 async function boot() {
   const t0 = Date.now();
+  if (window.JardLoader && $('ldLogo')) ldAnim = JardLoader.start($('ldLogo'));
   LOAD_STEPS.forEach((t, i) => setTimeout(() => { $('ldText').textContent = t; }, i * 1100));
   try {
     await store.init();
@@ -113,7 +115,7 @@ async function boot() {
   showTab('count'); updateBar(); renderFav();
   await new Promise(r => setTimeout(r, Math.max(0, 4000 - (Date.now() - t0))));
   $('loading').classList.add('out');
-  setTimeout(() => { $('loading').hidden = true; }, 450);
+  setTimeout(() => { $('loading').hidden = true; if (ldAnim) ldAnim.stop(); }, 450);
 }
 
 function refreshHeader() {
