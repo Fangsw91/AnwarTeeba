@@ -109,7 +109,7 @@ async function boot() {
     return;
   }
   if (store.getMeta('priceIncludesTax', false) !== true) await store.setMeta('priceIncludesTax', true);   // أسعار الشراء شاملة الضريبة دائماً
-  applyFont(store.getMeta('fontSize', 19)); applyTheme(store.getMeta('theme', 'light')); markTheme();
+  applyFont(store.getMeta('fontSize', 19)); moveNavInd(true); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => moveNavInd(true)); applyTheme(store.getMeta('theme', 'light')); markTheme();
   FX.on = store.getMeta('sound', true) !== false;
   refreshHeader();
   showTab('count'); updateBar(); renderFav();
@@ -159,11 +159,23 @@ function askPassword() {
 }
 
 /* ---------- التبويبات ---------- */
+const TAB_ORDER = ['count', 'report', 'products', 'reports', 'settings'];
+let curTab = 'count';
+function moveNavInd(instant) {
+  const ind = $('navInd'), b = document.querySelector('#nav button.on'); if (!ind || !b) return;
+  if (instant) ind.classList.add('nt');
+  ind.style.width = b.offsetWidth + 'px'; ind.style.transform = `translateX(${b.offsetLeft}px)`;
+  if (instant) requestAnimationFrame(() => requestAnimationFrame(() => ind.classList.remove('nt')));
+}
+window.addEventListener('resize', () => moveNavInd(true));
 function showTab(tab) {
+  document.documentElement.style.setProperty('--dir', TAB_ORDER.indexOf(tab) > TAB_ORDER.indexOf(curTab) ? -1 : (TAB_ORDER.indexOf(tab) < TAB_ORDER.indexOf(curTab) ? 1 : 0));
+  curTab = tab;
   if (tab !== 'settings') unlocked = false;   // الإعدادات تُقفل عند مغادرتها
   document.querySelector('.bar').classList.toggle('mini', tab !== 'count');
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   ['count', 'report', 'products', 'reports', 'settings'].forEach(t => { $('tab-' + t).hidden = t !== tab; });
+  moveNavInd(false);
   if (tab !== 'count') stopScanner();
   if (tab === 'count') { refreshHeader(); loadRecent(); }
   if (tab === 'report') { renderStats(); loadRecent(); }
@@ -361,6 +373,7 @@ function updateReady() {
 $('edChips').addEventListener('click', () => setTimeout(updateReady, 0));
 document.querySelectorAll('.chips button, #plus, #minus').forEach(b => b.addEventListener('click', () => setTimeout(updateReady, 0)));
 let adding = false;
+function okPop() { const e = $('okPop'); e.classList.remove('go'); void e.offsetWidth; e.classList.add('go'); }
 async function addCurrent() {
   if (!current || adding) return;
   const qty = qtyVal();
@@ -394,7 +407,7 @@ async function addCurrent() {
     if (replace) { r = { counted: await store.setOwnCount(p.id, qty, counter()) }; }
     else r = await store.addCount(p.id, qty, counter());
     toast(`${replace ? 'تم استبدال الكمية' : 'تمت إضافة ' + nf.format(qty)} — المجموع ${nf.format(r.counted)} ${p.unit}`, 'ok');
-    hideAll();
+    hideAll(); okPop();
     $('q').value = '';
     $('q').focus();
     loadRecent(); renderFav(); updateBar();

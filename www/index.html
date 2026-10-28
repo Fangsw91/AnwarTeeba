@@ -74,7 +74,7 @@
       </div>
     </div>
 
-    <div id="noProducts" class="card warn" hidden>لا توجد أصناف بعد.</div>
+    <div id="noProducts" class="card warn empty" hidden><svg class="empty-ill" viewBox="0 0 120 90" aria-hidden="true"><path d="M38 52a22 22 0 0 1 44 0z" fill="#e01f26"/><g stroke="#e01f26" stroke-width="3.5" stroke-linecap="round"><path d="M60 18v8M36 26l5 6M84 26l-5 6M22 42l8 3M98 42l-8 3"/></g><rect x="26" y="56" width="68" height="26" rx="6" fill="currentColor" opacity=".16"/><path d="M26 62h68" stroke="currentColor" stroke-width="3" opacity=".4"/><path d="M50 70h20" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".5"/></svg><b>لا توجد أصناف بعد</b><span>استورد ملف الأصناف من الإعدادات</span></div>
 
     <form id="searchForm" class="card" autocomplete="off">
       <div class="row">
@@ -158,7 +158,7 @@
       <div class="rc-head"><svg class="ic"><use href="#i-clock"/></svg><h3>آخر العمليات المسجّلة</h3></div>
       <ul class="list" id="recent"></ul>
       <ul class="list" id="recentMore" hidden></ul>
-      <div class="muted" id="recentEmpty">لا توجد عمليات بعد.</div>
+      <div class="empty" id="recentEmpty"><svg class="empty-ill" viewBox="0 0 120 90" aria-hidden="true"><path d="M38 52a22 22 0 0 1 44 0z" fill="#e01f26"/><g stroke="#e01f26" stroke-width="3.5" stroke-linecap="round"><path d="M60 18v8M36 26l5 6M84 26l-5 6M22 42l8 3M98 42l-8 3"/></g><rect x="26" y="56" width="68" height="26" rx="6" fill="currentColor" opacity=".16"/><path d="M26 62h68" stroke="currentColor" stroke-width="3" opacity=".4"/><path d="M50 70h20" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".5"/></svg><b>لا توجد عمليات بعد</b><span>ابدأ بمسح باركود أو البحث عن صنف</span></div>
       <button type="button" class="rc-toggle" id="recentToggle" hidden><span id="recentToggleTxt">عرض الباقي</span><svg class="ic chev"><use href="#i-chevron"/></svg></button>
     </section>
   </section>
@@ -332,12 +332,15 @@
 </main>
 
 <nav class="nav" id="nav">
+  <span class="nav-ind" id="navInd"></span>
   <button data-tab="count" class="on"><i><svg class="ic"><use href="#i-scan"/></svg></i>الجرد</button>
   <button data-tab="report"><i><svg class="ic"><use href="#i-chart"/></svg></i>النتائج</button>
   <button data-tab="products"><i><svg class="ic"><use href="#i-box"/></svg></i>الأصناف</button>
   <button data-tab="reports"><i><svg class="ic"><use href="#i-file"/></svg></i>التقارير</button>
   <button data-tab="settings"><i><svg class="ic"><use href="#i-gear"/></svg></i>الإعدادات</button>
 </nav>
+
+<div id="okPop" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="28"/><path d="m19 33 9 9 18-20"/></svg></div>
 
 <div id="scanner" hidden>
   <video id="video" playsinline muted></video>
