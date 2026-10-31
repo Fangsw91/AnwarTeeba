@@ -96,16 +96,19 @@
       <div class="prevnote" id="prevNote" hidden></div>
       <div class="priceline" hidden><span id="pPrice"></span></div>
       <div class="quickedit" id="step1">
-        <label class="field"><span id="edPriceLbl">سعر الشراء للوحدة</span>
-          <input id="edPrice" type="number" inputmode="decimal" step="any" min="0">
-        </label>
-        <div class="field">نسبة الضريبة
+        <div id="fPrice">
+          <label class="field"><span id="edPriceLbl">سعر الشراء للوحدة</span>
+            <input id="edPrice" type="number" inputmode="decimal" step="any" min="0">
+          </label>
+          <button type="button" class="btn block" id="priceNext"><svg class="ic"><use href="#i-check"/></svg>تأكيد السعر</button>
+        </div>
+        <div class="field unitrow" id="fUnit" hidden>الوحدة
+          <div class="taxchips unitchips" id="edUnits"></div>
+        </div>
+        <div class="field" id="fTax" hidden>نسبة الضريبة
           <div class="taxchips" id="edChips"></div>
         </div>
         <select id="edTax" hidden><option value=""></option></select>
-        <div class="field unitrow">الوحدة
-          <div class="taxchips unitchips" id="edUnits"></div>
-        </div>
         <div class="savedmark" id="savedMark"></div>
       </div>
       <div id="step2" hidden>

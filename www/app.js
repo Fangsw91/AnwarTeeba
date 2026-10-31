@@ -272,10 +272,9 @@ function selectProduct(p) {
   $('edPrice').blur();
 }
 
-const UNITS = ['حبة', 'كيلو', 'غرام'];
+const UNITS = ['حبة', 'كيلو'];
 function renderUnits(box, cur) {
-  const list = UNITS.includes(cur) ? UNITS : [cur, ...UNITS];
-  box.innerHTML = list.map(u => `<button type="button" data-u="${esc(u)}" class="${u === cur ? 'on' : ''}">${esc(u)}</button>`).join('');
+  box.innerHTML = UNITS.map(u => `<button type="button" data-u="${esc(u)}" class="${u === cur ? 'on' : ''}">${esc(u)}</button>`).join('');
 }
 const unitOf = box => { const b = box.querySelector('button.on'); return b ? b.dataset.u : null; };
 function pickUnit(box, ev) { const b = ev.target.closest('button'); if (!b) return false; box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); return true; }
@@ -284,12 +283,25 @@ $('edChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v
 function markChips() { document.querySelectorAll('#edChips button').forEach(b => b.classList.toggle('on', b.dataset.v === $('edTax').value)); }
 $('edChips').addEventListener('click', async ev => {
   const b = ev.target.closest('button'); if (!b) return;
+  const prev = $('edTax').value;
   $('edTax').value = b.dataset.v; markChips();
+  if (!(await askConfirm(`نسبة الضريبة ${b.textContent} لهذا الصنف.\nهل هي صحيحة؟`, 'نعم، تأكيد'))) { $('edTax').value = prev; markChips(); return; }
   await saveEdit();
   showStep(true); setTimeout(() => $('qty').focus({ preventScroll: false }), 80);
   updateReady();
 });
-$('edUnits').addEventListener('click', ev => { if (pickUnit($('edUnits'), ev)) { $('qty').placeholder = 'الكمية (' + unitOf($('edUnits')) + ')'; saveEdit(); } });
+// الخطوة الأولى: السعر ← تأكيد ← الوحدة ← الضريبة ← تأكيد
+async function confirmPrice() {
+  const v = parseFloat($('edPrice').value);
+  if (!isFinite(v) || v <= 0) { toast('أدخل سعر الصنف', 'err'); $('edPrice').focus(); return; }
+  $('edPrice').blur();
+  if (!(await askConfirm(`السعر ${pf.format(v)} شامل الضريبة.\nهل هو صحيح؟`, 'نعم، تأكيد'))) { $('edPrice').focus(); return; }
+  await saveEdit();
+  $('priceNext').hidden = true; $('fUnit').hidden = false;
+  setTimeout(() => $('fUnit').scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+}
+$('priceNext').addEventListener('click', confirmPrice);
+$('edUnits').addEventListener('click', ev => { if (pickUnit($('edUnits'), ev)) { $('qty').placeholder = 'الكمية (' + unitOf($('edUnits')) + ')'; saveEdit(); $('fTax').hidden = false; setTimeout(() => $('fTax').scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); } });
 function showStep(second) {
   $('step1').hidden = second; $('step2').hidden = !second;
   if (second) {
@@ -298,7 +310,7 @@ function showStep(second) {
     $('qty').placeholder = 'الكمية (' + u + ')';
   }
 }
-$('editPT').addEventListener('click', () => { showStep(false); updateReady(); });
+$('editPT').addEventListener('click', () => { $('fUnit').hidden = true; $('fTax').hidden = true; $('priceNext').hidden = false; showStep(false); updateReady(); });
 function fillEdit() {
   renderUnits($('edUnits'), current.unit); $('qty').placeholder = 'الكمية (' + current.unit + ')';
   $('edPriceLbl').textContent = 'سعر الشراء للوحدة (شامل الضريبة)';
@@ -308,6 +320,7 @@ function fillEdit() {
   $('edTax').value = current.tax == null ? '' : String(current.tax);
   $('savedMark').textContent = '';
   markChips();
+  $('fUnit').hidden = true; $('fTax').hidden = true; $('priceNext').hidden = false;
   showStep(current.tax != null);
 }
 let savingEdit = Promise.resolve();
@@ -329,8 +342,7 @@ function saveEdit() {
   });
   return savingEdit;
 }
-$('edPrice').addEventListener('change', saveEdit);
-$('edPrice').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); saveEdit(); $('edPrice').blur(); } });
+$('edPrice').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); confirmPrice(); } });
 
 function showNotFound() {
   hideAll();
