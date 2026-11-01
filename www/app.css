@@ -468,8 +468,9 @@ details.taxdef .btn.ghost { border-color: #1f9d8a; color: #167a6b; }
 details.taxdef > summary > .ic:first-child { background: rgba(255,255,255,.22); }
 
 /* زر إضافة صنف يدوي في الشريط العلوي (صفحة الجرد فقط) */
-.bar-add { flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 16px; border: 1.5px solid rgba(255,255,255,.35); background: linear-gradient(135deg, rgba(255,255,255,.26), rgba(255,255,255,.08)); color: #fff; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: 0 6px 16px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.35); transition: transform .15s ease, background .2s ease; }
-.bar-add .ic { width: 1.7rem; height: 1.7rem; stroke-width: 2; }
+.bar-add { flex: none; box-sizing: border-box; width: 2.9rem; height: 2.9rem; padding: 0; display: grid; place-items: center; border-radius: 16px; border: 1.5px solid rgba(255,255,255,.35); background: linear-gradient(135deg, rgba(255,255,255,.26), rgba(255,255,255,.08)); color: #fff; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: 0 6px 16px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.35); transition: transform .15s ease, background .2s ease; }
+.bar-add { position: relative; }
+.bar-add .ic { display: block; position: absolute; inset: 0; margin: auto; width: 1.6rem; height: 1.6rem; stroke-width: 2; }
 .bar-add:active { transform: scale(.9) rotate(90deg); }
 .bar-add:hover { background: linear-gradient(135deg, rgba(255,255,255,.34), rgba(255,255,255,.14)); }
 .bar-in { gap: 12px; }
