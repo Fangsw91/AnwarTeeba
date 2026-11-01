@@ -168,6 +168,8 @@ function moveNavInd(instant) {
   if (instant) requestAnimationFrame(() => requestAnimationFrame(() => ind.classList.remove('nt')));
 }
 window.addEventListener('resize', () => moveNavInd(true));
+if (window.ResizeObserver) { const ro = new ResizeObserver(() => moveNavInd(true)); document.querySelectorAll('#nav button').forEach(b => ro.observe(b)); }
+if (document.fonts && document.fonts.load) ['400', '600', '700'].forEach(w => document.fonts.load(w + ' 1em Cairo').then(() => moveNavInd(true)).catch(() => {}));
 function showTab(tab) {
   document.documentElement.style.setProperty('--dir', TAB_ORDER.indexOf(tab) > TAB_ORDER.indexOf(curTab) ? -1 : (TAB_ORDER.indexOf(tab) < TAB_ORDER.indexOf(curTab) ? 1 : 0));
   curTab = tab;
