@@ -648,6 +648,47 @@ $('mergeBtn').addEventListener('click', async () => {
 });
 
 
+/* ---------- إضافة صنف يدوي ---------- */
+$('mnChips').innerHTML = TAX_CHIPS.map(([v, t]) => `<button type="button" data-v="${v}">${t}</button>`).join('');
+let mnTax = '';
+function openManual() {
+  $('mnName').value = ''; $('mnPrice').value = ''; $('mnQty').value = ''; mnTax = '';
+  renderUnits($('mnUnits'), 'حبة');
+  $('mnChips').querySelectorAll('button').forEach(b => b.classList.remove('on'));
+  $('manual').hidden = false; document.body.classList.add('mn-open');
+  setTimeout(() => $('mnName').focus(), 120);
+}
+function closeManual() { $('manual').hidden = true; document.body.classList.remove('mn-open'); }
+$('manualBtn').addEventListener('click', openManual);
+$('mnNo').addEventListener('click', closeManual);
+$('mnUnits').addEventListener('click', ev => pickUnit($('mnUnits'), ev));
+$('mnChips').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  mnTax = b.dataset.v; $('mnChips').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+});
+let mnBusy = false;
+$('manualForm').addEventListener('submit', async ev => {
+  ev.preventDefault(); if (mnBusy) return;
+  const name = $('mnName').value.trim(), price = parseFloat($('mnPrice').value), qty = parseFloat($('mnQty').value), unit = unitOf($('mnUnits')) || 'حبة';
+  const bad = (msg, id) => { toast(msg, 'err'); if (id) $(id).focus(); };
+  if (!name) return bad('اكتب اسم الصنف', 'mnName');
+  if (!isFinite(price) || price <= 0) return bad('أدخل سعر الصنف', 'mnPrice');
+  if (mnTax === '') { toast('اختر نسبة الضريبة', 'err'); $('mnChips').classList.remove('need'); void $('mnChips').offsetWidth; $('mnChips').classList.add('need'); return; }
+  if (!isFinite(qty) || qty <= 0) return bad('أدخل العدد', 'mnQty');
+  const dup = store.lookupAll(name, 10).items.find(p => p.name.trim() === name);
+  if (dup) return bad('يوجد صنف بهذا الاسم، ابحث عنه في صفحة الجرد', 'mnName');
+  mnBusy = true;
+  try {
+    const p = await store.addProduct({ name, unit });
+    await store.updateProduct(p.id, { cost: price, tax: Number(mnTax), unit });
+    const r = await store.addCount(p.id, qty, counter());
+    closeManual(); okPop();
+    toast(`أُضيف «${name}» — ${nf.format(qty)} ${unit}`, 'ok');
+    refreshHeader(); loadRecent(); renderFav(); updateBar();
+  } catch (e) { toast(e.message, 'err'); }
+  finally { mnBusy = false; }
+});
+
 /* ---------- ملف تعريف الضرائب ---------- */
 $('tdExport').addEventListener('click', async () => {
   const { text, count } = store.exportTaxDefsCsv();

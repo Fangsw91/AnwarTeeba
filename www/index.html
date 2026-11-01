@@ -36,6 +36,7 @@
 <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></symbol>
 <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
 <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+<symbol id="i-addbox" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M12 8v8M8 12h8"/></symbol>
 <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol>
 <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
 <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-6"/></symbol>
@@ -59,6 +60,7 @@
       <svg viewBox="0 0 44 44"><circle class="rg-bg" cx="22" cy="22" r="18"/><circle class="rg-fg" id="barRing" cx="22" cy="22" r="18"/></svg>
       <em id="barPct">0%</em>
     </div>
+    <button type="button" class="bar-add" id="manualBtn" aria-label="إضافة صنف يدوياً"><svg class="ic"><use href="#i-addbox"/></svg></button>
   </div>
 </div>
 
@@ -365,6 +367,21 @@
   <div class="frame"></div>
   <button class="btn ghost" id="torchBtn" hidden><svg class="ic"><use href="#i-bolt"/></svg>المصباح</button>
   <button class="btn" id="scanClose"><svg class="ic"><use href="#i-x"/></svg>إغلاق</button>
+</div>
+
+<div id="manual" hidden>
+  <form class="mn-box" id="manualForm" autocomplete="off" novalidate>
+    <div class="mn-head"><span class="mn-ic"><svg class="ic"><use href="#i-addbox"/></svg></span><b>إضافة صنف يدوياً</b></div>
+    <label class="field">اسم الصنف<input id="mnName" maxlength="190" placeholder="اسم الصنف"></label>
+    <label class="field">سعر الشراء للوحدة (شامل الضريبة)<input id="mnPrice" type="number" inputmode="decimal" step="any" min="0" placeholder="السعر"></label>
+    <div class="field">الوحدة<div class="taxchips unitchips" id="mnUnits"></div></div>
+    <div class="field">نسبة الضريبة<div class="taxchips" id="mnChips"></div></div>
+    <label class="field">العدد<input id="mnQty" type="number" inputmode="decimal" step="any" min="0" placeholder="الكمية"></label>
+    <div class="mn-btns">
+      <button type="submit" class="btn" id="mnOk"><svg class="ic"><use href="#i-plus"/></svg>إضافة للجرد</button>
+      <button type="button" class="btn ghost" id="mnNo"><svg class="ic"><use href="#i-x"/></svg>إلغاء</button>
+    </div>
+  </form>
 </div>
 
 <div id="confirm" hidden>
