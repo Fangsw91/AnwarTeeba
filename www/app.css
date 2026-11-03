@@ -484,3 +484,16 @@ details.taxdef > summary > .ic:first-child { background: rgba(255,255,255,.22); 
 #manual .mn-btns { display: grid; gap: 10px; margin-top: 4px; }
 body.mn-open { overflow: hidden; }
 .bar.mini .bar-in { pointer-events: none; }
+
+/* ---------- الشريط العلوي المسطّح مع خط التقدم ---------- */
+.bar { border-radius: 0 !important; background: var(--brand) !important; box-shadow: none !important; }
+:root[data-theme="dark"] .bar { background: #0f0e24 !important; }
+.bar .orb { display: none !important; }
+.bar .ring { display: none !important; }
+.bar-in { padding: 14px 18px 18px; }
+.bar-num b { font-size: 1.9rem; text-shadow: none; }
+.bar-num span { font-size: .95rem; }
+.bar::after { left: auto; right: 0; width: 100%; height: 5px; background: rgba(255,255,255,.14); animation: none; }
+.bar::before { content: ""; position: absolute; right: 0; bottom: 0; height: 5px; width: var(--p, 0%); background: var(--accent); z-index: 2; border-radius: 4px 0 0 4px; transition: width .9s cubic-bezier(.2,.8,.2,1); }
+.bar .bar-add { background: var(--accent); border: 0; color: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 6px 16px rgba(224,31,38,.35); }
+.bar .bar-add:hover { background: var(--accent); }

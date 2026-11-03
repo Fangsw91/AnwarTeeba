@@ -16,6 +16,7 @@ function updateBar() {
   $('barSub').textContent = `من ${nf.format(s.products)} صنف`;
   $('barPct').textContent = pct + '%';
   $('barRing').style.strokeDashoffset = String(113.1 * (1 - pct / 100));
+  document.querySelector('.bar').style.setProperty('--p', pct + '%');
   const from = barShown, to = s.items, t0 = performance.now();
   barShown = to;
   const step = now => {
